@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit Observation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #eef3f8;
+            margin: 0;
+            padding: 40px 0;
+            color: #2c3e50;
+        }
+
+        /* Navigation Bar */
+        .nav {
+            background: #1a73e8;
+            padding: 14px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+        .nav-title {
+            color: white;
+            font-size: 22px;
+            font-weight: bold;
+        }
+        .nav-links a {
+            color: white;
+            margin-left: 20px;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .nav-links a:hover {
+            text-decoration: underline;
+        }
+
+        /* Form Card */
+        .form-card {
+            max-width: 550px;
+            margin: 40px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 14px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.12);
+        }
+        h1 {
+            text-align: center;
+            color: #1a73e8;
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+            color: #1a73e8;
+        }
+        .icon {
+            margin-right: 6px;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            margin-top: 6px;
+            border: 1px solid #cfd8e3;
+            border-radius: 6px;
+            background: #f8fbff;
+        }
+        textarea {
+            height: 80px;
+            resize: vertical;
+        }
+
+        /* Image styles */
+        .current-img {
+            width: 220px;
+            margin-top: 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            border: 2px solid #d0d7de;
+        }
+        .preview {
+            width: 180px;
+            margin-top: 10px;
+            border-radius: 10px;
+            display: none;
+            border: 2px solid #1a73e8;
+        }
+        .placeholder {
+            width: 180px;
+            height: 130px;
+            background: #d0d7de;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            color: white;
+            margin-top: 10px;
+        }
+
+        /* Lightbox */
+        .lightbox {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .lightbox img {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 12px;
+        }
+
+        button {
+            margin-top: 25px;
+            width: 100%;
+            padding: 14px;
+            background: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 17px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #155fc0;
+        }
+    </style>
+
+    <script>
+        function previewImage(event) {
+            const file = event.target.files[0];
+            const preview = document.getElementById("preview");
+            const placeholder = document.getElementById("placeholder");
+
+            if (file) {
+                preview.src = URL.createObjectURL(file);
+                preview.style.display = "block";
+                placeholder.style.display = "none";
+            }
+        }
+
+        function openLightbox(src) {
+            document.getElementById("lightbox-img").src = src;
+            document.getElementById("lightbox").style.display = "flex";
+        }
+
+        function closeLightbox() {
+            document.getElementById("lightbox").style.display = "none";
+        }
+    </script>
+</head>
+<body>
+
+<!-- Navigation -->
+<div class="nav">
+    <div class="nav-title">🎣 Fishing Log</div>
+    <div class="nav-links">
+        <a href="/">Dashboard</a>
+        <a href="/add">Add Catch</a>
+    </div>
+</div>
+
+<!-- Edit Form -->
+<div class="form-card">
+    <h1>Edit Observation</h1>
+
+    <form method="POST" enctype="multipart/form-data">
+
+        <label><span class="icon">📅</span>Date</label>
+        <input type="date" name="date" value="{{ record['date'] }}" required>
+
+        <label><span class="icon">📍</span>Location</label>
+        <input type="text" name="location" value="{{ record['location'] }}" required>
+
+        <label><span class="icon">🐟</span>Species</label>
+        <input type="text" name="species" value="{{ record['species'] }}" required>
+
+        <label><span class="icon">🔢</span>Count</label>
+        <input type="number" name="count" value="{{ record['count'] }}" required>
+
+        <label><span class="icon">🪱</span>Bait</label>
+        <input type="text" name="bait" value="{{ record['bait'] }}">
+
+        <label><span class="icon">📏</span>Size</label>
+        <input type="text" name="size" value="{{ record['size'] }}">
+
+        <label><span class="icon">🌊</span>Water</label>
+        <input type="text" name="water" value="{{ record['water'] }}">
+
+        <label><span class="icon">🚤</span>Platform</label>
+        <input type="text" name="platform" value="{{ record['platform'] }}">
+
+        <label><span class="icon">📝</span>Comments</label>
+        <textarea name="comments">{{ record['comments'] }}</textarea>
+
+        <!-- Current Image -->
+        <label><span class="icon">📸</span>Current Photo</label>
+        {% if record['image'] %}
+            <img class="current-img"
+                 src="/static/uploads/{{ record['image'] }}"
+                 onclick="openLightbox('/static/uploads/{{ record['image'] }}')">
+        {% else %}
+            <div class="placeholder">📷</div>
+        {% endif %}
+
+        <input type="hidden" name="existing_image" value="{{ record['image'] }}">
+
+        <!-- New Upload -->
+        <label><span class="icon">📤</span>Upload New Photo (optional)</label>
+        <input type="file" name="image" onchange="previewImage(event)">
+
+        <div id="placeholder" class="placeholder">📷</div>
+        <img id="preview" class="preview">
+
+        <button type="submit">Save Changes</button>
+    </form>
+</div>
+
+<!-- Lightbox -->
+<div id="lightbox" class="lightbox" onclick="closeLightbox()">
+    <img id="lightbox-img">
+</div>
+
+</body>
+</html>
+

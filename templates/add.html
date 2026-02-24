@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Fishing Entry</title>
+
+    <!-- Leaflet CSS + JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+</head>
+
+<body>
+
+<h1>Add New Fishing Entry</h1>
+
+<h3>Tap the map to set coordinates</h3>
+<div id="pickermap" 
+     style="height: 300px; border: 2px solid #ccc; border-radius: 8px; margin-bottom: 20px;">
+</div>
+
+<form method="post" enctype="multipart/form-data">
+
+    <label>Date:</label>
+    <input type="date" name="date" required><br><br>
+
+    <label>Location:</label>
+    <input type="text" name="location" required><br><br>
+
+    <label>Species:</label>
+    <input type="text" name="species" required><br><br>
+
+    <label>Count:</label>
+    <input type="number" name="count"><br><br>
+
+    <label>Bait:</label>
+    <input type="text" name="bait"><br><br>
+
+    <label>Size:</label>
+    <input type="text" name="size"><br><br>
+
+    <label>Water:</label>
+    <input type="text" name="water"><br><br>
+
+    <label>Platform:</label>
+    <input type="text" name="platform"><br><br>
+
+    <label>Comments:</label>
+    <textarea name="comments"></textarea><br><br>
+
+    <label>Latitude:</label>
+    <input type="text" name="lat"><br><br>
+
+    <label>Longitude:</label>
+    <input type="text" name="lng"><br><br>
+
+    <label>Image:</label>
+    <input type="file" name="image"><br><br>
+
+    <button type="submit">Save Entry</button>
+</form>
+
+<br>
+<a href="/">⬅ Back</a>
+
+<!-- ⭐ SCRIPT MUST BE AT THE BOTTOM ⭐ -->
+<script>
+    // Create picker map centered on Massachusetts
+    var pickermap = L.map('pickermap').setView([42.3, -71.0], 8);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18
+    }).addTo(pickermap);
+
+    var marker = null;
+
+    // When user clicks the map, set lat/lng fields
+    pickermap.on('click', function(e) {
+        var lat = e.latlng.lat.toFixed(6);
+        var lng = e.latlng.lng.toFixed(6);
+
+        document.querySelector('input[name="lat"]').value = lat;
+        document.querySelector('input[name="lng"]').value = lng;
+
+        if (marker) {
+            marker.setLatLng(e.latlng);
+        } else {
+            marker = L.marker(e.latlng).addTo(pickermap);
+        }
+    });
+
+    // Fix for blank map (Leaflet redraw)
+    setTimeout(function() {
+        pickermap.invalidateSize();
+    }, 200);
+</script>
+
+</body>
+</html>
+

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit Entry</title>
+
+    <!-- Leaflet CSS + JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+</head>
+
+<body>
+
+<h1>Edit Fishing Entry</h1>
+<h3>Tap the map to update coordinates</h3>
+
+<div id="pickermap" 
+     style="height: 300px; border: 2px solid #ccc; border-radius: 8px; margin-bottom: 20px;">
+</div>
+
+<form method="post" enctype="multipart/form-data">
+
+    <label>Date:</label>
+    <input type="date" name="date" value="{{ record.date }}" required><br><br>
+
+    <label>Location:</label>
+    <input type="text" name="location" value="{{ record.location }}" required><br><br>
+
+    <label>Species:</label>
+    <input type="text" name="species" value="{{ record.species }}" required><br><br>
+
+    <label>Count:</label>
+    <input type="number" name="count" value="{{ record.count }}"><br><br>
+
+    <label>Bait:</label>
+    <input type="text" name="bait" value="{{ record.bait }}"><br><br>
+
+    <label>Size:</label>
+    <input type="text" name="size" value="{{ record.size }}"><br><br>
+
+    <label>Water:</label>
+    <input type="text" name="water" value="{{ record.water }}"><br><br>
+
+    <label>Platform:</label>
+    <input type="text" name="platform" value="{{ record.platform }}"><br><br>
+
+    <label>Comments:</label>
+    <textarea name="comments">{{ record.comments }}</textarea><br><br>
+
+    <label>Latitude:</label>
+    <input type="text" name="lat" value="{{ record.lat }}"><br><br>
+
+    <label>Longitude:</label>
+    <input type="text" name="lng" value="{{ record.lng }}"><br><br>
+
+    <label>Existing Image:</label><br>
+    {% if record.image %}
+        <img src="/static/uploads/{{ record.image }}" width="150"><br>
+    {% endif %}
+    <input type="hidden" name="existing_image" value="{{ record.image }}">
+
+    <label>Upload New Image:</label>
+    <input type="file" name="image"><br><br>
+
+    <button type="submit">Save Changes</button>
+</form>
+
+<br>
+<a href="/">⬅ Back</a>
+
+<!-- ⭐ SCRIPT MUST BE AT THE BOTTOM ⭐ -->
+<script>
+    var startLat = {{ record.lat if record.lat else 42.3 }};
+    var startLng = {{ record.lng if record.lng else -71.0 }};
+
+    var pickermap = L.map('pickermap').setView([startLat, startLng], 10);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18
+    }).addTo(pickermap);
+
+    var marker = L.marker([startLat, startLng]).addTo(pickermap);
+
+    pickermap.on('click', function(e) {
+        var lat = e.latlng.lat.toFixed(6);
+        var lng = e.latlng.lng.toFixed(6);
+
+        document.querySelector('input[name="lat"]').value = lat;
+        document.querySelector('input[name="lng"]').value = lng;
+
+        marker.setLatLng(e.latlng);
+    });
+
+    // Fix for blank map
+    setTimeout(function() {
+        pickermap.invalidateSize();
+    }, 200);
+</script>
+
+</body>
+</html>
+

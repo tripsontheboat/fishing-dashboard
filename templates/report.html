@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fishing Report</title>
+
+    <!-- Leaflet CSS + JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1 { margin-bottom: 10px; }
+        form { margin-bottom: 20px; }
+        label { margin-right: 8px; }
+        input, select { margin-right: 15px; }
+
+        #map {
+            height: 350px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .stats-box {
+            background: #f7f7f7;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            width: 300px;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>Fishing Report</h1>
+
+<!-- FILTER FORM -->
+<form method="get" action="/report">
+    <label>Start Date:</label>
+    <input type="date" name="start" value="{{ request.args.get('start','') }}">
+
+    <label>End Date:</label>
+    <input type="date" name="end" value="{{ request.args.get('end','') }}">
+
+    <label>Species:</label>
+    <input type="text" name="species" value="{{ request.args.get('species','') }}">
+
+    <label>Location:</label>
+    <input type="text" name="location" value="{{ request.args.get('location','') }}">
+
+    <label>Water:</label>
+    <input type="text" name="water" value="{{ request.args.get('water','') }}">
+
+    <label>Platform:</label>
+    <input type="text" name="platform" value="{{ request.args.get('platform','') }}">
+
+    <button type="submit">Run Report</button>
+</form>
+
+<a href="/">⬅ Back to Dashboard</a>
+
+<!-- SUMMARY STATS -->
+<div class="stats-box">
+    <strong>Summary:</strong><br>
+    Total Trips: {{ rows|length }}<br>
+
+    {% set total_fish = 0 %}
+    {% for r in rows %}
+        {% if r.count %}
+            {% set total_fish = total_fish + r.count|int %}
+        {% endif %}
+    {% endfor %}
+
+    Total Fish Caught: {{ total_fish }}<br>
+</div>
+
+<!-- MAP -->
+<div id="map"></div>
+
+<!-- RESULTS TABLE -->
+<h2>Results</h2>
+
+<table>
+    <tr>
+        <th>Date</th>
+        <th>Location</th>
+        <th>Species</th>
+        <th>Count</th>
+        <th>Bait</th>
+        <th>Size</th>
+        <th>Water</th>
+        <th>Platform</th>
+    </tr>
+
+    {% for row in rows %}
+    <tr>
+        <td>{{ row.date }}</td>
+        <td>{{ row.location }}</td>
+        <td>{{ row.species }}</td>
+        <td>{{ row.count }}</td>
+        <td>{{ row.bait }}</td>
+        <td>{{ row.size }}</td>
+        <td>{{ row.water }}</td>
+        <td>{{ row.platform }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+<!-- MAP SCRIPT -->
+<script>
+    var map = L.map('map').setView([42.3, -71.0], 8);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18
+    }).addTo(map);
+
+    // Load filtered rows from Flask
+    var rows = {{ rows|tojson }};
+
+    rows.forEach(function(r) {
+        if (r.lat && r.lng) {
+            L.marker([r.lat, r.lng])
+                .addTo(map)
+                .bindPopup(
+                    `<strong>${r.species}</strong><br>
+                     ${r.date}<br>
+                     ${r.location}`
+                );
+        }
+    });
+
+    // Auto-zoom to results
+    if (rows.length > 0) {
+        var bounds = [];
+        rows.forEach(r => {
+            if (r.lat && r.lng) bounds.push([r.lat, r.lng]);
+        });
+        if (bounds.length > 0) map.fitBounds(bounds);
+    }
+</script>
+
+</body>
+</html>
+
