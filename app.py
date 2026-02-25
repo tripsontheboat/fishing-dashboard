@@ -1,16 +1,97 @@
 import os
 import sqlite3
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, abort
+from flask_login import (
+    LoginManager,
+    login_user,
+    logout_user,
+    login_required,
+    current_user,
+    UserMixin
+)
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.config["UPLOAD_FOLDER"] = "static/uploads"
+app.config["SECRET_KEY"] = "super-secret-key"  # Change this later
 
 # Ensure upload folder exists
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
 
 # -----------------------------
-# DATABASE CONNECTION
+# USER + AUTH SETUP (SQLite)
+# -----------------------------
+def get_user_connection():
+    conn = sqlite3.connect("mydatabase.db")
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+class User(UserMixin):
+    def __init__(self, id, username, password_hash, role):
+        self.id = id
+        self.username = username
+        self.password_hash = password_hash
+        self.role = role
+
+    @staticmethod
+    def get(user_id):
+        conn = get_user_connection()
+        row = conn.execute(
+            "SELECT * FROM users WHERE id = ?", (user_id,)
+        ).fetchone()
+        conn.close()
+        if row:
+            return User(row["id"], row["username"], row["password_hash"], row["role"])
+        return None
+
+    @staticmethod
+    def find_by_username(username):
+        conn = get_user_connection()
+        row = conn.execute(
+            "SELECT * FROM users WHERE username = ?", (username,)
+        ).fetchone()
+        conn.close()
+        if row:
+            return User(row["id"], row["username"], row["password_hash"], row["role"])
+        return None
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+
+# -----------------------------
+# LOGIN MANAGER
+# -----------------------------
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "login"
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.get(user_id)
+
+
+# -----------------------------
+# ROLE-BASED ACCESS DECORATOR
+# -----------------------------
+def role_required(role):
+    def wrapper(fn):
+        def decorated_view(*args, **kwargs):
+            if not current_user.is_authenticated:
+                return login_manager.unauthorized()
+            if current_user.role not in [role, "admin"]:
+                abort(403)
+            return fn(*args, **kwargs)
+        decorated_view.__name__ = fn.__name__
+        return decorated_view
+    return wrapper
+
+
+# -----------------------------
+# DATABASE CONNECTION (OBSERVATIONS)
 # -----------------------------
 def get_db_connection():
     conn = sqlite3.connect("mydatabase.db")
@@ -19,9 +100,39 @@ def get_db_connection():
 
 
 # -----------------------------
-# HOME PAGE (FILTER + SORT + SPECIES + MAP DATA + QUICK STATS)
+# LOGIN ROUTE
+# -----------------------------
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+
+        user = User.find_by_username(username)
+        if user and user.check_password(password):
+            login_user(user)
+            return redirect("/")
+        return "Invalid username or password"
+
+    return render_template("login.html")
+
+
+# -----------------------------
+# LOGOUT ROUTE
+# -----------------------------
+@app.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    return redirect("/login")
+
+
+# -----------------------------
+# HOME PAGE (READ ACCESS)
 # -----------------------------
 @app.route("/")
+@login_required
+@role_required("read")
 def index():
     start = request.args.get("start")
     end = request.args.get("end")
@@ -31,7 +142,6 @@ def index():
     query = "SELECT * FROM observations WHERE 1=1"
     params = []
 
-    # Date filtering
     if start:
         query += " AND DATE(date) >= DATE(?)"
         params.append(start)
@@ -40,12 +150,10 @@ def index():
         query += " AND DATE(date) <= DATE(?)"
         params.append(end)
 
-    # Species filtering
     if species_filter and species_filter != "all":
         query += " AND species = ?"
         params.append(species_filter)
 
-    # Sorting
     if sort == "oldest":
         query += " ORDER BY DATE(date) ASC"
     else:
@@ -53,32 +161,24 @@ def index():
 
     conn = get_db_connection()
 
-    # Species list for dropdown
     species_raw = conn.execute(
         "SELECT DISTINCT species FROM observations ORDER BY species ASC"
     ).fetchall()
     species_list = [dict(s) for s in species_raw]
 
-    # Main data
     rows_raw = conn.execute(query, params).fetchall()
     rows = [dict(r) for r in rows_raw]
 
-    # -----------------------------
-    # QUICK STATS
-    # -----------------------------
     total_trips = len(rows)
-
     total_fish = 0
     species_counts = {}
 
     for r in rows:
-        # Count fish safely
         try:
             total_fish += int(r["count"]) if r["count"] else 0
         except:
             pass
 
-        # Count species frequency
         sp = r["species"]
         if sp:
             species_counts[sp] = species_counts.get(sp, 0) + 1
@@ -100,9 +200,11 @@ def index():
 
 
 # -----------------------------
-# REPORT PAGE (ADVANCED FILTERING)
+# REPORT PAGE (READ ACCESS)
 # -----------------------------
 @app.route("/report", methods=["GET"])
+@login_required
+@role_required("read")
 def report():
     start = request.args.get("start")
     end = request.args.get("end")
@@ -114,7 +216,6 @@ def report():
     query = "SELECT * FROM observations WHERE 1=1"
     params = []
 
-    # Date filters
     if start:
         query += " AND DATE(date) >= DATE(?)"
         params.append(start)
@@ -123,22 +224,18 @@ def report():
         query += " AND DATE(date) <= DATE(?)"
         params.append(end)
 
-    # Species filter
     if species and species.strip() != "":
         query += " AND species LIKE ?"
         params.append(f"%{species}%")
 
-    # Location filter
     if location and location.strip() != "":
         query += " AND location LIKE ?"
         params.append(f"%{location}%")
 
-    # Water filter
     if water and water.strip() != "":
         query += " AND water LIKE ?"
         params.append(f"%{water}%")
 
-    # Platform filter
     if platform and platform.strip() != "":
         query += " AND platform LIKE ?"
         params.append(f"%{platform}%")
@@ -152,9 +249,11 @@ def report():
 
 
 # -----------------------------
-# ADD NEW ENTRY
+# ADD NEW ENTRY (WRITE ACCESS)
 # -----------------------------
 @app.route("/add", methods=["GET", "POST"])
+@login_required
+@role_required("write")
 def add():
     if request.method == "POST":
         date = request.form["date"]
@@ -196,9 +295,11 @@ def add():
 
 
 # -----------------------------
-# EDIT ENTRY
+# EDIT ENTRY (WRITE ACCESS)
 # -----------------------------
 @app.route("/edit/<int:id>", methods=["GET", "POST"])
+@login_required
+@role_required("write")
 def edit(id):
     conn = get_db_connection()
     record = conn.execute("SELECT * FROM observations WHERE id = ?", (id,)).fetchone()
@@ -245,9 +346,11 @@ def edit(id):
 
 
 # -----------------------------
-# DELETE ENTRY
+# DELETE ENTRY (WRITE ACCESS)
 # -----------------------------
 @app.route("/delete/<int:id>", methods=["GET", "POST"])
+@login_required
+@role_required("write")
 def delete(id):
     conn = get_db_connection()
     record = conn.execute("SELECT * FROM observations WHERE id = ?", (id,)).fetchone()
