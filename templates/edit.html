@@ -1,65 +1,128 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Edit Entry</title>
-
-    <!-- Leaflet CSS + JS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-</head>
-
-<body>
+{% extends "base.html" %}
+{% block content %}
 
 <h1>Edit Fishing Entry</h1>
 <h3>Tap the map to update coordinates</h3>
 
-<div id="pickermap" 
+<!-- Leaflet CSS + JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<style>
+    .form-group {
+        margin-bottom: 10px;
+    }
+    .form-section {
+        margin-top: 16px;
+    }
+    label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+    input, select, textarea {
+        width: 100%;
+        padding: 6px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+</style>
+
+<!-- MAP PICKER -->
+<div id="pickermap"
      style="height: 300px; border: 2px solid #ccc; border-radius: 8px; margin-bottom: 20px;">
 </div>
 
 <form method="post" enctype="multipart/form-data">
 
-    <label>Date:</label>
-    <input type="date" name="date" value="{{ record.date }}" required><br><br>
+    <!-- 🐟 CATCH DETAILS -->
+    <div class="form-section">
+        <div class="form-group">
+            <label>Species</label>
+            <input type="text" name="species" value="{{ record.species }}" required>
+        </div>
 
-    <label>Location:</label>
-    <input type="text" name="location" value="{{ record.location }}" required><br><br>
+        <div class="form-group">
+            <label>Size</label>
+            <input type="text" name="size" value="{{ record.size }}">
+        </div>
 
-    <label>Species:</label>
-    <input type="text" name="species" value="{{ record.species }}" required><br><br>
+        <div class="form-group">
+            <label>Count</label>
+            <input type="number" name="count" value="{{ record.count }}">
+        </div>
 
-    <label>Count:</label>
-    <input type="number" name="count" value="{{ record.count }}"><br><br>
+        <div class="form-group">
+            <label>Existing Image</label><br>
+            {% if record.image %}
+                <img src="/static/uploads/{{ record.image }}" width="150"><br>
+            {% endif %}
+            <input type="hidden" name="existing_image" value="{{ record.image }}">
+        </div>
 
-    <label>Bait:</label>
-    <input type="text" name="bait" value="{{ record.bait }}"><br><br>
+        <div class="form-group">
+            <label>Upload New Image</label>
+            <input type="file" name="image">
+        </div>
+    </div>
 
-    <label>Size:</label>
-    <input type="text" name="size" value="{{ record.size }}"><br><br>
+    <!-- 📍 LOCATION -->
+    <div class="form-section">
+        <div class="form-group">
+            <label>Waterbody</label>
+            <input type="text" name="location" value="{{ record.location }}" required>
+        </div>
 
-    <label>Water:</label>
-    <input type="text" name="water" value="{{ record.water }}"><br><br>
+        <div class="form-group">
+            <label>Latitude</label>
+            <input type="text" name="lat" value="{{ record.lat }}">
+        </div>
 
-    <label>Platform:</label>
-    <input type="text" name="platform" value="{{ record.platform }}"><br><br>
+        <div class="form-group">
+            <label>Longitude</label>
+            <input type="text" name="lng" value="{{ record.lng }}">
+        </div>
 
-    <label>Comments:</label>
-    <textarea name="comments">{{ record.comments }}</textarea><br><br>
+        <div class="form-group">
+            <label>Water Type</label>
+            <select name="water">
+                <option value="">Select</option>
+                <option value="Fresh" {% if record.water == "Fresh" %}selected{% endif %}>Fresh</option>
+                <option value="Salt" {% if record.water == "Salt" %}selected{% endif %}>Salt</option>
+            </select>
+        </div>
 
-    <label>Latitude:</label>
-    <input type="text" name="lat" value="{{ record.lat }}"><br><br>
+        <div class="form-group">
+            <label>Platform</label>
+            <select name="platform">
+                <option value="">Select</option>
+                <option value="Boat" {% if record.platform == "Boat" %}selected{% endif %}>Boat</option>
+                <option value="Charter" {% if record.platform == "Charter" %}selected{% endif %}>Charter</option>
+                <option value="Ice" {% if record.platform == "Ice" %}selected{% endif %}>Ice</option>
+            </select>
+        </div>
+    </div>
 
-    <label>Longitude:</label>
-    <input type="text" name="lng" value="{{ record.lng }}"><br><br>
+    <!-- 🌤️ CONDITIONS -->
+    <div class="form-section">
+        <div class="form-group">
+            <label>Date</label>
+            <input type="date" name="date" value="{{ record.date }}" required>
+        </div>
 
-    <label>Existing Image:</label><br>
-    {% if record.image %}
-        <img src="/static/uploads/{{ record.image }}" width="150"><br>
-    {% endif %}
-    <input type="hidden" name="existing_image" value="{{ record.image }}">
+        <div class="form-group">
+            <label>Lure / Bait</label>
+            <input type="text" name="bait" value="{{ record.bait }}">
+        </div>
+    </div>
 
-    <label>Upload New Image:</label>
-    <input type="file" name="image"><br><br>
+    <!-- 📝 NOTES -->
+    <div class="form-section" style="margin-top: 20px;">
+        <div class="form-group">
+            <label>Comments</label>
+            <textarea name="comments">{{ record.comments }}</textarea>
+        </div>
+    </div>
 
     <button type="submit">Save Changes</button>
 </form>
@@ -67,7 +130,7 @@
 <br>
 <a href="/">⬅ Back</a>
 
-<!-- ⭐ SCRIPT MUST BE AT THE BOTTOM ⭐ -->
+<!-- MAP SCRIPT -->
 <script>
     var startLat = {{ record.lat if record.lat else 42.3 }};
     var startLng = {{ record.lng if record.lng else -71.0 }};
@@ -90,12 +153,10 @@
         marker.setLatLng(e.latlng);
     });
 
-    // Fix for blank map
     setTimeout(function() {
         pickermap.invalidateSize();
     }, 200);
 </script>
 
-</body>
-</html>
+{% endblock %}
 

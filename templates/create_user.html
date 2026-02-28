@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div style="
+    max-width: 450px;
+    margin: 40px auto;
+    background: #ffffff;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    font-family: Arial, sans-serif;
+">
+
+    <div style="
+        background: linear-gradient(135deg, #007bff, #00a2ff);
+        padding: 15px;
+        border-radius: 10px;
+        color: white;
+        text-align: center;
+        margin-bottom: 20px;
+    ">
+        <h2 style="margin: 0; font-size: 22px;">👤 Create New User</h2>
+        <p style="margin: 5px 0 0; font-size: 14px; opacity: 0.9;">
+            Add a new user to the system
+        </p>
+    </div>
+
+    <form method="POST">
+
+        <label style="font-weight: bold;">👤 Username</label>
+        <input type="text" name="username" required
+            style="width:100%;padding:12px;margin-bottom:15px;border-radius:6px;border:1px solid #ccc;">
+
+        <label style="font-weight: bold;">🔒 Password</label>
+        <input type="password" name="password" required
+            style="width:100%;padding:12px;margin-bottom:15px;border-radius:6px;border:1px solid #ccc;">
+
+        <label style="font-weight: bold;">🎚️ Role</label>
+        <select name="role" required
+            style="width:100%;padding:12px;margin-bottom:20px;border-radius:6px;border:1px solid #ccc;">
+            <option value="user">User</option>
+            <option value="admin">Admin</option>
+        </select>
+
+        <button type="submit" style="
+            width:100%;
+            padding:12px;
+            background:#007bff;
+            color:white;
+            border:none;
+            border-radius:6px;
+            font-size:16px;
+            cursor:pointer;
+            transition: 0.2s;
+        "
+        onmouseover="this.style.background='#005fcc'"
+        onmouseout="this.style.background='#007bff'">
+            ➕ Create User
+        </button>
+
+    </form>
+
+</div>
+
+{% endblock %}
+

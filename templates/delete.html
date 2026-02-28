@@ -1,179 +1,140 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Edit Observation</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #eef3f8;
-            margin: 0;
-            padding: 40px 0;
-            color: #2c3e50;
-        }
+{% extends "base.html" %}
+{% block content %}
 
-        /* Navigation Bar */
-        .nav {
-            background: #1a73e8;
-            padding: 14px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-radius: 0 0 10px 10px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-        }
-        .nav-title {
-            color: white;
-            font-size: 22px;
-            font-weight: bold;
-        }
-        .nav-links a {
-            color: white;
-            margin-left: 20px;
-            text-decoration: none;
-            font-size: 16px;
-            font-weight: bold;
-        }
-        .nav-links a:hover {
-            text-decoration: underline;
-        }
+<h1 style="text-align:center; color:#1a73e8;">Edit Observation</h1>
 
-        /* Form Card */
-        .form-card {
-            max-width: 550px;
-            margin: 40px auto;
-            background: white;
-            padding: 30px;
-            border-radius: 14px;
-            box-shadow: 0 3px 12px rgba(0,0,0,0.12);
-        }
-        h1 {
-            text-align: center;
-            color: #1a73e8;
-            margin-bottom: 25px;
-        }
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #eef3f8;
+        margin: 0;
+        padding: 0;
+        color: #2c3e50;
+    }
 
-        label {
-            display: block;
-            margin-top: 15px;
-            font-weight: bold;
-            color: #1a73e8;
-        }
-        .icon {
-            margin-right: 6px;
-        }
+    .form-card {
+        max-width: 550px;
+        margin: 40px auto;
+        background: white;
+        padding: 30px;
+        border-radius: 14px;
+        box-shadow: 0 3px 12px rgba(0,0,0,0.12);
+    }
 
-        input, textarea {
-            width: 100%;
-            padding: 12px;
-            margin-top: 6px;
-            border: 1px solid #cfd8e3;
-            border-radius: 6px;
-            background: #f8fbff;
-        }
-        textarea {
-            height: 80px;
-            resize: vertical;
-        }
+    label {
+        display: block;
+        margin-top: 15px;
+        font-weight: bold;
+        color: #1a73e8;
+    }
 
-        /* Image styles */
-        .current-img {
-            width: 220px;
-            margin-top: 10px;
-            border-radius: 10px;
-            cursor: pointer;
-            border: 2px solid #d0d7de;
-        }
-        .preview {
-            width: 180px;
-            margin-top: 10px;
-            border-radius: 10px;
-            display: none;
-            border: 2px solid #1a73e8;
-        }
-        .placeholder {
-            width: 180px;
-            height: 130px;
-            background: #d0d7de;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 40px;
-            color: white;
-            margin-top: 10px;
-        }
+    .icon {
+        margin-right: 6px;
+    }
 
-        /* Lightbox */
-        .lightbox {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.85);
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
-        .lightbox img {
-            max-width: 90%;
-            max-height: 90%;
-            border-radius: 12px;
-        }
+    input, textarea {
+        width: 100%;
+        padding: 12px;
+        margin-top: 6px;
+        border: 1px solid #cfd8e3;
+        border-radius: 6px;
+        background: #f8fbff;
+    }
 
-        button {
-            margin-top: 25px;
-            width: 100%;
-            padding: 14px;
-            background: #1a73e8;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 17px;
-            cursor: pointer;
-            font-weight: bold;
+    textarea {
+        height: 80px;
+        resize: vertical;
+    }
+
+    .current-img {
+        width: 220px;
+        margin-top: 10px;
+        border-radius: 10px;
+        cursor: pointer;
+        border: 2px solid #d0d7de;
+    }
+
+    .preview {
+        width: 180px;
+        margin-top: 10px;
+        border-radius: 10px;
+        display: none;
+        border: 2px solid #1a73e8;
+    }
+
+    .placeholder {
+        width: 180px;
+        height: 130px;
+        background: #d0d7de;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 40px;
+        color: white;
+        margin-top: 10px;
+    }
+
+    .lightbox {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.85);
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+
+    .lightbox img {
+        max-width: 90%;
+        max-height: 90%;
+        border-radius: 12px;
+    }
+
+    button {
+        margin-top: 25px;
+        width: 100%;
+        padding: 14px;
+        background: #1a73e8;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 17px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    button:hover {
+        background: #155fc0;
+    }
+</style>
+
+<script>
+    function previewImage(event) {
+        const file = event.target.files[0];
+        const preview = document.getElementById("preview");
+        const placeholder = document.getElementById("placeholder");
+
+        if (file) {
+            preview.src = URL.createObjectURL(file);
+            preview.style.display = "block";
+            placeholder.style.display = "none";
         }
-        button:hover {
-            background: #155fc0;
-        }
-    </style>
+    }
 
-    <script>
-        function previewImage(event) {
-            const file = event.target.files[0];
-            const preview = document.getElementById("preview");
-            const placeholder = document.getElementById("placeholder");
+    function openLightbox(src) {
+        document.getElementById("lightbox-img").src = src;
+        document.getElementById("lightbox").style.display = "flex";
+    }
 
-            if (file) {
-                preview.src = URL.createObjectURL(file);
-                preview.style.display = "block";
-                placeholder.style.display = "none";
-            }
-        }
+    function closeLightbox() {
+        document.getElementById("lightbox").style.display = "none";
+    }
+</script>
 
-        function openLightbox(src) {
-            document.getElementById("lightbox-img").src = src;
-            document.getElementById("lightbox").style.display = "flex";
-        }
-
-        function closeLightbox() {
-            document.getElementById("lightbox").style.display = "none";
-        }
-    </script>
-</head>
-<body>
-
-<!-- Navigation -->
-<div class="nav">
-    <div class="nav-title">🎣 Fishing Log</div>
-    <div class="nav-links">
-        <a href="/">Dashboard</a>
-        <a href="/add">Add Catch</a>
-    </div>
-</div>
-
-<!-- Edit Form -->
 <div class="form-card">
     <h1>Edit Observation</h1>
 
@@ -206,7 +167,6 @@
         <label><span class="icon">📝</span>Comments</label>
         <textarea name="comments">{{ record['comments'] }}</textarea>
 
-        <!-- Current Image -->
         <label><span class="icon">📸</span>Current Photo</label>
         {% if record['image'] %}
             <img class="current-img"
@@ -218,7 +178,6 @@
 
         <input type="hidden" name="existing_image" value="{{ record['image'] }}">
 
-        <!-- New Upload -->
         <label><span class="icon">📤</span>Upload New Photo (optional)</label>
         <input type="file" name="image" onchange="previewImage(event)">
 
@@ -234,6 +193,5 @@
     <img id="lightbox-img">
 </div>
 
-</body>
-</html>
+{% endblock %}
 

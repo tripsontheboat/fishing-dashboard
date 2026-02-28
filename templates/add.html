@@ -1,59 +1,120 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Add Fishing Entry</title>
-
-    <!-- Leaflet CSS + JS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-</head>
-
-<body>
+{% extends "base.html" %}
+{% block content %}
 
 <h1>Add New Fishing Entry</h1>
-
 <h3>Tap the map to set coordinates</h3>
-<div id="pickermap" 
+
+<!-- Leaflet CSS + JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<style>
+    .form-group {
+        margin-bottom: 10px;
+    }
+    .form-section {
+        margin-top: 16px;
+    }
+    label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+    input, select, textarea {
+        width: 100%;
+        padding: 6px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+</style>
+
+<!-- MAP PICKER -->
+<div id="pickermap"
      style="height: 300px; border: 2px solid #ccc; border-radius: 8px; margin-bottom: 20px;">
 </div>
 
 <form method="post" enctype="multipart/form-data">
 
-    <label>Date:</label>
-    <input type="date" name="date" required><br><br>
+    <!-- 🐟 CATCH DETAILS -->
+    <div class="form-section">
+        <div class="form-group">
+            <label>Species</label>
+            <input type="text" name="species" required>
+        </div>
 
-    <label>Location:</label>
-    <input type="text" name="location" required><br><br>
+        <div class="form-group">
+            <label>Size</label>
+            <input type="text" name="size">
+        </div>
 
-    <label>Species:</label>
-    <input type="text" name="species" required><br><br>
+        <div class="form-group">
+            <label>Count</label>
+            <input type="number" name="count">
+        </div>
 
-    <label>Count:</label>
-    <input type="number" name="count"><br><br>
+        <div class="form-group">
+            <label>Image</label>
+            <input type="file" name="image">
+        </div>
+    </div>
 
-    <label>Bait:</label>
-    <input type="text" name="bait"><br><br>
+    <!-- 📍 LOCATION -->
+    <div class="form-section">
+        <div class="form-group">
+            <label>Waterbody</label>
+            <input type="text" name="location" required>
+        </div>
 
-    <label>Size:</label>
-    <input type="text" name="size"><br><br>
+        <div class="form-group">
+            <label>Latitude</label>
+            <input type="text" name="lat">
+        </div>
 
-    <label>Water:</label>
-    <input type="text" name="water"><br><br>
+        <div class="form-group">
+            <label>Longitude</label>
+            <input type="text" name="lng">
+        </div>
 
-    <label>Platform:</label>
-    <input type="text" name="platform"><br><br>
+        <div class="form-group">
+            <label>Water Type</label>
+            <select name="water">
+                <option value="">Select</option>
+                <option value="Fresh">Fresh</option>
+                <option value="Salt">Salt</option>
+            </select>
+        </div>
 
-    <label>Comments:</label>
-    <textarea name="comments"></textarea><br><br>
+        <div class="form-group">
+            <label>Platform</label>
+            <select name="platform">
+                <option value="">Select</option>
+                <option value="Boat">Boat</option>
+                <option value="Charter">Charter</option>
+                <option value="Ice">Ice</option>
+            </select>
+        </div>
+    </div>
 
-    <label>Latitude:</label>
-    <input type="text" name="lat"><br><br>
+    <!-- 🌤️ CONDITIONS -->
+    <div class="form-section">
+        <div class="form-group">
+            <label>Date</label>
+            <input type="date" name="date" required>
+        </div>
 
-    <label>Longitude:</label>
-    <input type="text" name="lng"><br><br>
+        <div class="form-group">
+            <label>Lure / Bait</label>
+            <input type="text" name="bait">
+        </div>
+    </div>
 
-    <label>Image:</label>
-    <input type="file" name="image"><br><br>
+    <!-- 📝 NOTES -->
+    <div class="form-section" style="margin-top: 20px;">
+        <div class="form-group">
+            <label>Comments</label>
+            <textarea name="comments"></textarea>
+        </div>
+    </div>
 
     <button type="submit">Save Entry</button>
 </form>
@@ -61,9 +122,8 @@
 <br>
 <a href="/">⬅ Back</a>
 
-<!-- ⭐ SCRIPT MUST BE AT THE BOTTOM ⭐ -->
+<!-- MAP SCRIPT -->
 <script>
-    // Create picker map centered on Massachusetts
     var pickermap = L.map('pickermap').setView([42.3, -71.0], 8);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -72,7 +132,6 @@
 
     var marker = null;
 
-    // When user clicks the map, set lat/lng fields
     pickermap.on('click', function(e) {
         var lat = e.latlng.lat.toFixed(6);
         var lng = e.latlng.lng.toFixed(6);
@@ -87,12 +146,10 @@
         }
     });
 
-    // Fix for blank map (Leaflet redraw)
     setTimeout(function() {
         pickermap.invalidateSize();
     }, 200);
 </script>
 
-</body>
-</html>
+{% endblock %}
 

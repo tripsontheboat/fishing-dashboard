@@ -13,14 +13,13 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.config["UPLOAD_FOLDER"] = "static/uploads"
-app.config["SECRET_KEY"] = "super-secret-key"  # Change this later
+app.config["SECRET_KEY"] = "super-secret-key"
 
-# Ensure upload folder exists
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
 
 # -----------------------------
-# USER + AUTH SETUP (SQLite)
+# USER + AUTH SETUP
 # -----------------------------
 def get_user_connection():
     conn = sqlite3.connect("mydatabase.db")
@@ -38,9 +37,7 @@ class User(UserMixin):
     @staticmethod
     def get(user_id):
         conn = get_user_connection()
-        row = conn.execute(
-            "SELECT * FROM users WHERE id = ?", (user_id,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
         conn.close()
         if row:
             return User(row["id"], row["username"], row["password_hash"], row["role"])
@@ -49,9 +46,7 @@ class User(UserMixin):
     @staticmethod
     def find_by_username(username):
         conn = get_user_connection()
-        row = conn.execute(
-            "SELECT * FROM users WHERE username = ?", (username,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
         conn.close()
         if row:
             return User(row["id"], row["username"], row["password_hash"], row["role"])
@@ -75,7 +70,7 @@ def load_user(user_id):
 
 
 # -----------------------------
-# ROLE-BASED ACCESS DECORATOR
+# ROLE DECORATOR
 # -----------------------------
 def role_required(role):
     def wrapper(fn):
@@ -91,7 +86,7 @@ def role_required(role):
 
 
 # -----------------------------
-# DATABASE CONNECTION (OBSERVATIONS)
+# OBSERVATION DB CONNECTION
 # -----------------------------
 def get_db_connection():
     conn = sqlite3.connect("mydatabase.db")
@@ -100,7 +95,7 @@ def get_db_connection():
 
 
 # -----------------------------
-# LOGIN ROUTE
+# LOGIN
 # -----------------------------
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -118,7 +113,7 @@ def login():
 
 
 # -----------------------------
-# LOGOUT ROUTE
+# LOGOUT
 # -----------------------------
 @app.route("/logout")
 @login_required
@@ -128,7 +123,7 @@ def logout():
 
 
 # -----------------------------
-# HOME PAGE (READ ACCESS)
+# HOME PAGE
 # -----------------------------
 @app.route("/")
 @login_required
@@ -200,7 +195,7 @@ def index():
 
 
 # -----------------------------
-# REPORT PAGE (READ ACCESS)
+# REPORT PAGE
 # -----------------------------
 @app.route("/report", methods=["GET"])
 @login_required
@@ -224,19 +219,19 @@ def report():
         query += " AND DATE(date) <= DATE(?)"
         params.append(end)
 
-    if species and species.strip() != "":
+    if species:
         query += " AND species LIKE ?"
         params.append(f"%{species}%")
 
-    if location and location.strip() != "":
+    if location:
         query += " AND location LIKE ?"
         params.append(f"%{location}%")
 
-    if water and water.strip() != "":
+    if water:
         query += " AND water LIKE ?"
         params.append(f"%{water}%")
 
-    if platform and platform.strip() != "":
+    if platform:
         query += " AND platform LIKE ?"
         params.append(f"%{platform}%")
 
@@ -249,7 +244,7 @@ def report():
 
 
 # -----------------------------
-# ADD NEW ENTRY (WRITE ACCESS)
+# ADD ENTRY
 # -----------------------------
 @app.route("/add", methods=["GET", "POST"])
 @login_required
@@ -295,7 +290,36 @@ def add():
 
 
 # -----------------------------
-# EDIT ENTRY (WRITE ACCESS)
+# CREATE USER (ADMIN ONLY)
+# -----------------------------
+@app.route("/create_user", methods=["GET", "POST"])
+@login_required
+def create_user():
+    if current_user.role != "admin":
+        return "Access denied", 403
+
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+        role = request.form["role"]
+
+        hashed_pw = generate_password_hash(password)
+
+        conn = get_user_connection()
+        conn.execute(
+            "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
+            (username, hashed_pw, role)
+        )
+        conn.commit()
+        conn.close()
+
+        return redirect("/")
+
+    return render_template("create_user.html")
+
+
+# -----------------------------
+# EDIT ENTRY
 # -----------------------------
 @app.route("/edit/<int:id>", methods=["GET", "POST"])
 @login_required
@@ -346,7 +370,7 @@ def edit(id):
 
 
 # -----------------------------
-# DELETE ENTRY (WRITE ACCESS)
+# DELETE ENTRY
 # -----------------------------
 @app.route("/delete/<int:id>", methods=["GET", "POST"])
 @login_required
@@ -369,9 +393,5 @@ def delete(id):
 # RUN SERVER
 # -----------------------------
 if __name__ == "__main__":
-    app.run(
-        host="0.0.0.0",
-        port=5000,
-        debug=True
-    )
+    app.run(host="0.0.0.0", port=5000, debug=True)
 

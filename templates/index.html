@@ -1,45 +1,37 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Fishing Dashboard</title>
-
-    <!-- Leaflet CSS + JS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        #map {
-            height: 400px;
-            margin-bottom: 20px;
-            border: 2px solid #ccc;
-            border-radius: 8px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
-        th, td {
-            padding: 8px;
-            border-bottom: 1px solid #ddd;
-        }
-        img {
-            max-width: 120px;
-            border-radius: 6px;
-        }
-    </style>
-</head>
-
-<body>
+{% extends "base.html" %}
+{% block content %}
 
 <h1>Fishing Dashboard</h1>
 
+<!-- Leaflet CSS + JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<style>
+    #map {
+        height: 400px;
+        margin-bottom: 20px;
+        border: 2px solid #ccc;
+        border-radius: 8px;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+    th, td {
+        padding: 8px;
+        border-bottom: 1px solid #ddd;
+    }
+    img {
+        max-width: 120px;
+        border-radius: 6px;
+    }
+</style>
+
 <!-- MAP -->
 <div id="map"></div>
+
 <div style="
     background:#f7f7f7;
     padding:15px;
@@ -77,11 +69,13 @@
 
     <button type="submit">Apply</button>
 </form>
+
 <div style="margin: 10px 0;">
-<a href="/add">➕ Add New Entry</a>
-&nbsp; | &nbsp;
-<a href="/report">📊 Reports</a>
+    <a href="/add">➕ Add New Entry</a>
+    &nbsp; | &nbsp;
+    <a href="/report">📊 Reports</a>
 </div>
+
 <!-- TABLE OF ENTRIES -->
 <table>
     <tr>
@@ -122,18 +116,14 @@
 
 <!-- MAP SCRIPT -->
 <script>
-    // Create map centered on Massachusetts
     var map = L.map('map').setView([42.3, -71.0], 8);
 
-    // Add OpenStreetMap tiles
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 18
     }).addTo(map);
 
-    // Load entries from Flask
     var entries = {{ data|tojson }};
 
-    // Species → marker color mapping (VALID COLORS ONLY)
     const speciesColors = {
         "False Albacore": "green",
         "Bluefish": "blue",
@@ -144,7 +134,6 @@
         "Other": "grey"
     };
 
-    // Function to generate colored marker icons
     function getColoredIcon(color) {
         return L.icon({
             iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
@@ -156,11 +145,8 @@
         });
     }
 
-    // Add markers with species‑based colors
     entries.forEach(function(entry) {
         if (entry.lat && entry.lng) {
-
-            // Pick color based on species, fallback to grey
             const color = speciesColors[entry.species] || "grey";
 
             L.marker([entry.lat, entry.lng], {
@@ -176,6 +162,5 @@
     });
 </script>
 
-</body>
-</html>
+{% endblock %}
 
