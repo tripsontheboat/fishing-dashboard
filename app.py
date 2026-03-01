@@ -316,6 +316,38 @@ def create_user():
         return redirect("/")
 
     return render_template("create_user.html")
+# -----------------------------
+# CHANGE USES PASSWORD
+# -----------------------------
+
+
+
+@app.route("/change_password", methods=["GET", "POST"])
+@login_required
+def change_password():
+    if request.method == "POST":
+        old_password = request.form["old_password"]
+        new_password = request.form["new_password"]
+
+        # Verify old password
+        if not current_user.check_password(old_password):
+            return "Old password is incorrect", 400
+
+        # Hash new password
+        new_hash = generate_password_hash(new_password)
+
+        # Update DB
+        conn = get_user_connection()
+        conn.execute(
+            "UPDATE users SET password_hash = ? WHERE id = ?",
+            (new_hash, current_user.id)
+        )
+        conn.commit()
+        conn.close()
+
+        return redirect("/")
+
+    return render_template("change_password.html")
 
 
 # -----------------------------
@@ -394,4 +426,5 @@ def delete(id):
 # -----------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
+
 
