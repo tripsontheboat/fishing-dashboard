@@ -17,7 +17,6 @@ app.config["SECRET_KEY"] = "super-secret-key"
 
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
-
 # -----------------------------
 # USER + AUTH SETUP
 # -----------------------------
@@ -25,7 +24,6 @@ def get_user_connection():
     conn = sqlite3.connect("mydatabase.db")
     conn.row_factory = sqlite3.Row
     return conn
-
 
 class User(UserMixin):
     def __init__(self, id, username, password_hash, role):
@@ -55,7 +53,6 @@ class User(UserMixin):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-
 # -----------------------------
 # LOGIN MANAGER
 # -----------------------------
@@ -63,11 +60,9 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
 
-
 @login_manager.user_loader
 def load_user(user_id):
     return User.get(user_id)
-
 
 # -----------------------------
 # ROLE DECORATOR
@@ -84,7 +79,6 @@ def role_required(role):
         return decorated_view
     return wrapper
 
-
 # -----------------------------
 # OBSERVATION DB CONNECTION
 # -----------------------------
@@ -92,7 +86,6 @@ def get_db_connection():
     conn = sqlite3.connect("mydatabase.db")
     conn.row_factory = sqlite3.Row
     return conn
-
 
 # -----------------------------
 # LOGIN
@@ -111,7 +104,6 @@ def login():
 
     return render_template("login.html")
 
-
 # -----------------------------
 # LOGOUT
 # -----------------------------
@@ -120,7 +112,6 @@ def login():
 def logout():
     logout_user()
     return redirect("/login")
-
 
 # -----------------------------
 # HOME PAGE
@@ -193,7 +184,6 @@ def index():
         most_common_species=most_common_species
     )
 
-
 # -----------------------------
 # REPORT PAGE
 # -----------------------------
@@ -242,53 +232,6 @@ def report():
 
     return render_template("report.html", rows=rows)
 
-
-# -----------------------------
-# ADD ENTRY
-# -----------------------------
-@app.route("/add", methods=["GET", "POST"])
-@login_required
-@role_required("write")
-def add():
-    if request.method == "POST":
-        date = request.form["date"]
-        location = request.form["location"]
-        species = request.form["species"]
-        count = request.form["count"]
-        bait = request.form["bait"]
-        size = request.form["size"]
-        water = request.form["water"]
-        platform = request.form["platform"]
-        comments = request.form["comments"]
-
-        lat = request.form.get("lat")
-        lng = request.form.get("lng")
-
-        image_file = request.files["image"]
-        filename = None
-
-        if image_file and image_file.filename != "":
-            filename = image_file.filename
-            image_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-            image_file.save(image_path)
-
-        conn = get_db_connection()
-        conn.execute(
-            """
-            INSERT INTO observations 
-            (date, location, species, count, bait, size, water, platform, comments, image, lat, lng)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (date, location, species, count, bait, size, water, platform, comments, filename, lat, lng),
-        )
-        conn.commit()
-        conn.close()
-
-        return redirect("/")
-
-    return render_template("add.html")
-
-
 # -----------------------------
 # CREATE USER (ADMIN ONLY)
 # -----------------------------
@@ -316,12 +259,10 @@ def create_user():
         return redirect("/")
 
     return render_template("create_user.html")
+
 # -----------------------------
-# CHANGE USES PASSWORD
+# CHANGE PASSWORD
 # -----------------------------
-
-
-
 @app.route("/change_password", methods=["GET", "POST"])
 @login_required
 def change_password():
@@ -329,14 +270,11 @@ def change_password():
         old_password = request.form["old_password"]
         new_password = request.form["new_password"]
 
-        # Verify old password
         if not current_user.check_password(old_password):
             return "Old password is incorrect", 400
 
-        # Hash new password
         new_hash = generate_password_hash(new_password)
 
-        # Update DB
         conn = get_user_connection()
         conn.execute(
             "UPDATE users SET password_hash = ? WHERE id = ?",
@@ -349,6 +287,58 @@ def change_password():
 
     return render_template("change_password.html")
 
+# -----------------------------
+# ADD ENTRY
+# -----------------------------
+@app.route("/add", methods=["GET", "POST"])
+@login_required
+@role_required("write")
+def add():
+    if request.method == "POST":
+        date = request.form["date"]
+        location = request.form["location"]
+        species = request.form["species"]
+        count = request.form["count"]
+        bait = request.form["bait"]
+        size = request.form["size"]
+        water = request.form["water"]
+        platform = request.form["platform"]
+        comments = request.form["comments"]
+
+        water_temp = request.form.get("water_temp")
+        wind = request.form.get("wind")
+        wave_height = request.form.get("wave_height")
+
+        lat = request.form.get("lat")
+        lng = request.form.get("lng")
+
+        image_file = request.files["image"]
+        filename = None
+
+        if image_file and image_file.filename != "":
+            filename = image_file.filename
+            image_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+            image_file.save(image_path)
+
+        conn = get_db_connection()
+        conn.execute(
+            """
+            INSERT INTO observations 
+            (date, location, species, count, bait, size, water, platform, comments,
+             image, lat, lng, water_temp, wind, wave_height)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                date, location, species, count, bait, size, water, platform, comments,
+                filename, lat, lng, water_temp, wind, wave_height
+            ),
+        )
+        conn.commit()
+        conn.close()
+
+        return redirect("/")
+
+    return render_template("add.html")
 
 # -----------------------------
 # EDIT ENTRY
@@ -371,6 +361,10 @@ def edit(id):
         platform = request.form["platform"]
         comments = request.form["comments"]
 
+        water_temp = request.form.get("water_temp")
+        wind = request.form.get("wind")
+        wave_height = request.form.get("wave_height")
+
         lat = request.form.get("lat")
         lng = request.form.get("lng")
 
@@ -387,10 +381,15 @@ def edit(id):
         conn.execute(
             """
             UPDATE observations
-            SET date=?, location=?, species=?, count=?, bait=?, size=?, water=?, platform=?, comments=?, image=?, lat=?, lng=?
+            SET date=?, location=?, species=?, count=?, bait=?, size=?, water=?, 
+                platform=?, comments=?, image=?, lat=?, lng=?, 
+                water_temp=?, wind=?, wave_height=?
             WHERE id=?
             """,
-            (date, location, species, count, bait, size, water, platform, comments, filename, lat, lng, id),
+            (
+                date, location, species, count, bait, size, water, platform, comments,
+                filename, lat, lng, water_temp, wind, wave_height, id
+            ),
         )
         conn.commit()
         conn.close()
@@ -399,7 +398,6 @@ def edit(id):
 
     conn.close()
     return render_template("edit.html", record=record)
-
 
 # -----------------------------
 # DELETE ENTRY
@@ -420,11 +418,9 @@ def delete(id):
     conn.close()
     return render_template("delete.html", record=record)
 
-
 # -----------------------------
 # RUN SERVER
 # -----------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
-
 

@@ -96,6 +96,11 @@
         <th>Size</th>
         <th>Water</th>
         <th>Platform</th>
+
+        <!-- NEW FIELDS -->
+        <th>Water Temp</th>
+        <th>Wind</th>
+        <th>Wave Height</th>
     </tr>
 
     {% for row in rows %}
@@ -108,6 +113,11 @@
         <td>{{ row.size }}</td>
         <td>{{ row.water }}</td>
         <td>{{ row.platform }}</td>
+
+        <!-- NEW FIELDS -->
+        <td>{{ row.water_temp }}</td>
+        <td>{{ row.wind }}</td>
+        <td>{{ row.wave_height }}</td>
     </tr>
     {% endfor %}
 </table>
@@ -129,7 +139,10 @@
                 .bindPopup(
                     `<strong>${r.species}</strong><br>
                      ${r.date}<br>
-                     ${r.location}`
+                     ${r.location}<br><br>
+                     <strong>Water Temp:</strong> ${r.water_temp || '—'}<br>
+                     <strong>Wind:</strong> ${r.wind || '—'}<br>
+                     <strong>Wave Height:</strong> ${r.wave_height || '—'}`
                 );
         }
     });
