@@ -1,170 +1,111 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h1>Add New Fishing Entry</h1>
-<h3>Tap the map to set coordinates</h3>
+<h1>Add New Entry</h1>
 
-<!-- Leaflet CSS + JS -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<div class="form-card">
+    <form method="POST" enctype="multipart/form-data">
 
-<style>
-    .form-group {
-        margin-bottom: 10px;
-    }
-    .form-section {
-        margin-top: 16px;
-    }
-    label {
-        display: block;
-        font-weight: 600;
-        margin-bottom: 4px;
-    }
-    input, select, textarea {
-        width: 100%;
-        padding: 6px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-    }
-</style>
-
-<!-- MAP PICKER -->
-<div id="pickermap"
-     style="height: 300px; border: 2px solid #ccc; border-radius: 8px; margin-bottom: 20px;">
-</div>
-
-<form method="post" enctype="multipart/form-data">
-
-    <!-- 🐟 CATCH DETAILS -->
-    <div class="form-section">
-        <div class="form-group">
-            <label>Species</label>
-            <input type="text" name="species" required>
-        </div>
-
-        <div class="form-group">
-            <label>Size</label>
-            <input type="text" name="size">
-        </div>
-
-        <div class="form-group">
-            <label>Count</label>
-            <input type="number" name="count">
-        </div>
-
-        <div class="form-group">
-            <label>Image</label>
-            <input type="file" name="image">
-        </div>
-    </div>
-
-    <!-- 📍 LOCATION -->
-    <div class="form-section">
-        <div class="form-group">
-            <label>Waterbody</label>
-            <input type="text" name="location" required>
-        </div>
-
-        <div class="form-group">
-            <label>Latitude</label>
-            <input type="text" name="lat">
-        </div>
-
-        <div class="form-group">
-            <label>Longitude</label>
-            <input type="text" name="lng">
-        </div>
-
-        <div class="form-group">
-            <label>Water Type</label>
-            <select name="water">
-                <option value="">Select</option>
-                <option value="Fresh">Fresh</option>
-                <option value="Salt">Salt</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label>Platform</label>
-            <select name="platform">
-                <option value="">Select</option>
-                <option value="Boat">Boat</option>
-                <option value="Charter">Charter</option>
-                <option value="Ice">Ice</option>
-            </select>
-        </div>
-    </div>
-
-    <!-- 🌤️ CONDITIONS -->
-    <div class="form-section">
-        <div class="form-group">
-            <label>Date</label>
+        <!-- Date -->
+        <div class="form-row">
+            <label>Date:</label>
             <input type="date" name="date" required>
         </div>
 
-        <div class="form-group">
-            <label>Lure / Bait</label>
-            <input type="text" name="bait">
+        <!-- Location -->
+        <div class="form-row">
+            <label>Location:</label>
+            <input type="text" name="location" placeholder="Enter location" required>
         </div>
 
-        <div class="form-group">
-            <label>Water Temp (°F)</label>
-            <input type="text" name="water_temp">
+        <!-- Species -->
+        <div class="form-row">
+            <label>Species:</label>
+            <input type="text" name="species" placeholder="Species caught" required>
         </div>
 
-        <div class="form-group">
-            <label>Wind</label>
-            <input type="text" name="wind">
+        <!-- Count -->
+        <div class="form-row">
+            <label>Count:</label>
+            <input type="number" name="count" min="1" placeholder="Number caught">
         </div>
 
-        <div class="form-group">
-            <label>Wave Height</label>
-            <input type="text" name="wave_height">
+        <!-- Bait -->
+        <div class="form-row">
+            <label>Bait:</label>
+            <input type="text" name="bait" placeholder="Bait used">
         </div>
-    </div>
 
-    <!-- 📝 NOTES -->
-    <div class="form-section" style="margin-top: 20px;">
-        <div class="form-group">
-            <label>Comments</label>
-            <textarea name="comments"></textarea>
+        <!-- Size -->
+        <div class="form-row">
+            <label>Size:</label>
+            <input type="text" name="size" placeholder="Size (optional)">
         </div>
-    </div>
 
-    <button type="submit">Save Entry</button>
-</form>
+        <!-- Water Type -->
+        <div class="form-row">
+            <label>Water Type:</label>
+            <select name="water">
+                <option value="Saltwater">Saltwater</option>
+                <option value="Freshwater">Freshwater</option>
+            </select>
+        </div>
 
-<br>
-<a href="/">⬅ Back</a>
+        <!-- Platform -->
+        <div class="form-row">
+            <label>Platform:</label>
+            <select name="platform">
+                <option value="Boat">Boat</option>
+                <option value="Shore">Shore</option>
+                <option value="Dock">Dock</option>
+            </select>
+        </div>
 
-<!-- MAP SCRIPT -->
-<script>
-    var pickermap = L.map('pickermap').setView([42.3, -71.0], 8);
+        <!-- Water Temp -->
+        <div class="form-row">
+            <label>Water Temp (°F):</label>
+            <input type="text" name="water_temp" placeholder="Example: 68°F">
+        </div>
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 18
-    }).addTo(pickermap);
+        <!-- Wind -->
+        <div class="form-row">
+            <label>Wind:</label>
+            <input type="text" name="wind" placeholder="Example: 10 mph NW">
+        </div>
 
-    var marker = null;
+        <!-- Wave Height -->
+        <div class="form-row">
+            <label>Wave Height:</label>
+            <input type="text" name="wave_height" placeholder="Example: 2 ft">
+        </div>
 
-    pickermap.on('click', function(e) {
-        var lat = e.latlng.lat.toFixed(6);
-        var lng = e.latlng.lng.toFixed(6);
+        <!-- Comments -->
+        <div class="form-row">
+            <label>Comments:</label>
+            <textarea name="comments" rows="4" placeholder="Additional notes..."></textarea>
+        </div>
 
-        document.querySelector('input[name="lat"]').value = lat;
-        document.querySelector('input[name="lng"]').value = lng;
+        <!-- Image Upload -->
+        <div class="form-row">
+            <label>Upload Image:</label>
+            <input type="file" name="image">
+        </div>
 
-        if (marker) {
-            marker.setLatLng(e.latlng);
-        } else {
-            marker = L.marker(e.latlng).addTo(pickermap);
-        }
-    });
+        <!-- Latitude -->
+        <div class="form-row">
+            <label>Latitude:</label>
+            <input type="text" name="lat" placeholder="Optional">
+        </div>
 
-    setTimeout(function() {
-        pickermap.invalidateSize();
-    }, 200);
-</script>
+        <!-- Longitude -->
+        <div class="form-row">
+            <label>Longitude:</label>
+            <input type="text" name="lng" placeholder="Optional">
+        </div>
+
+        <button type="submit" class="save-btn">Save Entry</button>
+    </form>
+</div>
 
 {% endblock %}
 

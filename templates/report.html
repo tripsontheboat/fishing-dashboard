@@ -1,91 +1,60 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h1>Fishing Report</h1>
-
-<!-- Leaflet CSS + JS -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
-<style>
-    h1 { margin-bottom: 10px; }
-    form { margin-bottom: 20px; }
-    label { margin-right: 8px; }
-    input, select { margin-right: 15px; }
-
-    #map {
-        height: 350px;
-        border: 2px solid #ccc;
-        border-radius: 8px;
-        margin-top: 20px;
-        margin-bottom: 20px;
-    }
-
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 15px;
-    }
-    th, td {
-        padding: 8px;
-        border-bottom: 1px solid #ddd;
-    }
-
-    .stats-box {
-        background: #f7f7f7;
-        padding: 12px;
-        border-radius: 8px;
-        margin-top: 15px;
-        width: 300px;
-    }
-</style>
-
-<!-- FILTER FORM -->
-<form method="get" action="/report">
-    <label>Start Date:</label>
-    <input type="date" name="start" value="{{ request.args.get('start','') }}">
-
-    <label>End Date:</label>
-    <input type="date" name="end" value="{{ request.args.get('end','') }}">
-
-    <label>Species:</label>
-    <input type="text" name="species" value="{{ request.args.get('species','') }}">
-
-    <label>Location:</label>
-    <input type="text" name="location" value="{{ request.args.get('location','') }}">
-
-    <label>Water:</label>
-    <input type="text" name="water" value="{{ request.args.get('water','') }}">
-
-    <label>Platform:</label>
-    <input type="text" name="platform" value="{{ request.args.get('platform','') }}">
-
-    <button type="submit">Run Report</button>
-</form>
-
-<a href="/">⬅ Back to Dashboard</a>
-
-<!-- SUMMARY STATS -->
-<div class="stats-box">
-    <strong>Summary:</strong><br>
-    Total Trips: {{ rows|length }}<br>
-
-    {% set total_fish = 0 %}
-    {% for r in rows %}
-        {% if r.count %}
-            {% set total_fish = total_fish + r.count|int %}
-        {% endif %}
-    {% endfor %}
-
-    Total Fish Caught: {{ total_fish }}<br>
+<h1>Report</h1>
+<div class="form-card" style="margin-bottom: 20px;">
+    <h2 style="margin-bottom: 10px;">Map View</h2>
+    <div id="report-map" style="height: 350px; border-radius: 8px;"></div>
 </div>
 
-<!-- MAP -->
-<div id="map"></div>
+<!-- Filter Box -->
+<div class="filter-box">
+    <form method="get">
+        <label>Start Date:</label>
+        <input type="date" name="start" value="{{ request.args.get('start', '') }}">
 
-<!-- RESULTS TABLE -->
-<h2>Results</h2>
+        <label>End Date:</label>
+        <input type="date" name="end" value="{{ request.args.get('end', '') }}">
 
+        <label>Species:</label>
+        <select name="species">
+            <option value="all">All</option>
+            {% for s in species_list %}
+                <option value="{{ s.species }}" {% if request.args.get('species') == s.species %}selected{% endif %}>
+                    {{ s.species }}
+                </option>
+            {% endfor %}
+        </select>
+
+        <label>Sort:</label>
+        <select name="sort">
+            <option value="newest">Newest First</option>
+            <option value="oldest" {% if request.args.get('sort') == 'oldest' %}selected{% endif %}>Oldest First</option>
+        </select>
+
+        <button type="submit" class="save-btn">Apply</button>
+    </form>
+</div>
+
+<!-- Summary Cards -->
+<div class="stats-container">
+    <div class="stat-card">
+        <h2>{{ total_trips }}</h2>
+        <p>Total Trips</p>
+    </div>
+
+    <div class="stat-card">
+        <h2>{{ total_fish }}</h2>
+        <p>Total Fish Counted</p>
+    </div>
+
+    <div class="stat-card">
+        <h2>{{ unique_species }}</h2>
+        <p>Unique Species</p>
+    </div>
+</div>
+
+<!-- Data Table -->
 <table>
     <tr>
         <th>Date</th>
@@ -96,14 +65,13 @@
         <th>Size</th>
         <th>Water</th>
         <th>Platform</th>
-
-        <!-- NEW FIELDS -->
         <th>Water Temp</th>
         <th>Wind</th>
         <th>Wave Height</th>
+        <th>Image</th>
     </tr>
 
-    {% for row in rows %}
+    {% for row in data %}
     <tr>
         <td>{{ row.date }}</td>
         <td>{{ row.location }}</td>
@@ -113,48 +81,57 @@
         <td>{{ row.size }}</td>
         <td>{{ row.water }}</td>
         <td>{{ row.platform }}</td>
-
-        <!-- NEW FIELDS -->
         <td>{{ row.water_temp }}</td>
         <td>{{ row.wind }}</td>
         <td>{{ row.wave_height }}</td>
+
+        <td>
+            {% if row.image %}
+                <img src="{{ url_for('static', filename='uploads/' ~ row.image) }}" 
+                     style="width:60px; border-radius:4px;">
+            {% endif %}
+        </td>
     </tr>
     {% endfor %}
 </table>
-
-<!-- MAP SCRIPT -->
 <script>
-    var map = L.map('map').setView([42.3, -71.0], 8);
+    const entries = {{ data | tojson }};
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 18
-    }).addTo(map);
+    if (entries.length === 0) {
+        document.getElementById("report-map").innerHTML =
+            "<p style='padding:10px;color:#666;'>No results to display on the map.</p>";
+    } else {
+        const map = L.map('report-map');
 
-    var rows = {{ rows|tojson }};
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+        }).addTo(map);
 
-    rows.forEach(function(r) {
-        if (r.lat && r.lng) {
-            L.marker([r.lat, r.lng])
-                .addTo(map)
-                .bindPopup(
-                    `<strong>${r.species}</strong><br>
-                     ${r.date}<br>
-                     ${r.location}<br><br>
-                     <strong>Water Temp:</strong> ${r.water_temp || '—'}<br>
-                     <strong>Wind:</strong> ${r.wind || '—'}<br>
-                     <strong>Wave Height:</strong> ${r.wave_height || '—'}`
-                );
-        }
-    });
+        const markers = [];
 
-    if (rows.length > 0) {
-        var bounds = [];
-        rows.forEach(r => {
-            if (r.lat && r.lng) bounds.push([r.lat, r.lng]);
+        entries.forEach(e => {
+            if (e.lat && e.lng) {
+                const marker = L.marker([e.lat, e.lng]).addTo(map);
+                marker.bindPopup(`
+                    <strong>${e.species || "Unknown species"}</strong><br>
+                    ${e.location || ""}<br>
+                    ${e.date || ""}
+                `);
+                markers.push(marker);
+            }
         });
-        if (bounds.length > 0) map.fitBounds(bounds);
+
+        if (markers.length > 0) {
+            const group = L.featureGroup(markers);
+            map.fitBounds(group.getBounds(), { padding: [20, 20] });
+        } else {
+            map.setView([0, 0], 2);
+            document.getElementById("report-map").innerHTML =
+                "<p style='padding:10px;color:#666;'>No coordinates available for these results.</p>";
+        }
     }
 </script>
 
 {% endblock %}
+
 

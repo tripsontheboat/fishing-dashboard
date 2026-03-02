@@ -1,82 +1,56 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h1>Fishing Dashboard</h1>
+<h1>Dashboard</h1>
 
-<!-- Leaflet CSS + JS -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<!-- Summary Cards -->
+<div class="stats-container">
+    <div class="stat-card">
+        <h2>{{ total_trips }}</h2>
+        <p>Total Trips</p>
+    </div>
 
-<style>
-    #map {
-        height: 400px;
-        margin-bottom: 20px;
-        border: 2px solid #ccc;
-        border-radius: 8px;
-    }
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 15px;
-    }
-    th, td {
-        padding: 8px;
-        border-bottom: 1px solid #ddd;
-    }
-    img {
-        max-width: 120px;
-        border-radius: 6px;
-    }
-</style>
+    <div class="stat-card">
+        <h2>{{ total_fish }}</h2>
+        <p>Total Fish Counted</p>
+    </div>
 
-<!-- MAP -->
-<div id="map"></div>
-
-<div style="
-    background:#f7f7f7;
-    padding:15px;
-    border-radius:8px;
-    width:300px;
-    margin:15px 0;
-">
-    <strong>Quick Stats</strong><br>
-    Total Trips: {{ total_trips }}<br>
-    Total Fish Caught: {{ total_fish }}<br>
-    Most Common Species: {{ most_common_species or "N/A" }}
+    <div class="stat-card">
+        <h2>{{ most_common_species if most_common_species else "N/A" }}</h2>
+        <p>Most Common Species</p>
+    </div>
 </div>
 
-<!-- FILTERS -->
-<form method="get" action="/">
-    <label>Start Date:</label>
-    <input type="date" name="start">
+<!-- Filter Box -->
+<div class="filter-box">
+    <form method="get">
+        <label>Start Date:</label>
+        <input type="date" name="start" value="{{ request.args.get('start', '') }}">
 
-    <label>End Date:</label>
-    <input type="date" name="end">
+        <label>End Date:</label>
+        <input type="date" name="end" value="{{ request.args.get('end', '') }}">
 
-    <label>Species:</label>
-    <select name="species">
-        <option value="all">All</option>
-        {% for s in species_list %}
-            <option value="{{ s.species }}">{{ s.species }}</option>
-        {% endfor %}
-    </select>
+        <label>Species:</label>
+        <select name="species">
+            <option value="all">All</option>
+            {% for s in species_list %}
+                <option value="{{ s.species }}" {% if request.args.get('species') == s.species %}selected{% endif %}>
+                    {{ s.species }}
+                </option>
+            {% endfor %}
+        </select>
 
-    <label>Sort:</label>
-    <select name="sort">
-        <option value="newest">Newest</option>
-        <option value="oldest">Oldest</option>
-    </select>
+        <label>Sort:</label>
+        <select name="sort">
+            <option value="newest">Newest First</option>
+            <option value="oldest" {% if request.args.get('sort') == 'oldest' %}selected{% endif %}>Oldest First</option>
+        </select>
 
-    <button type="submit">Apply</button>
-</form>
-
-<div style="margin: 10px 0;">
-    <a href="/add">➕ Add New Entry</a>
-    &nbsp; | &nbsp;
-    <a href="/report">📊 Reports</a>
+        <button type="submit" class="save-btn">Apply</button>
+    </form>
 </div>
 
-<!-- TABLE OF ENTRIES -->
+<!-- Data Table -->
 <table>
     <tr>
         <th>Date</th>
@@ -87,6 +61,9 @@
         <th>Size</th>
         <th>Water</th>
         <th>Platform</th>
+        <th>Water Temp</th>
+        <th>Wind</th>
+        <th>Wave Height</th>
         <th>Image</th>
         <th>Actions</th>
     </tr>
@@ -101,66 +78,28 @@
         <td>{{ row.size }}</td>
         <td>{{ row.water }}</td>
         <td>{{ row.platform }}</td>
+        <td>{{ row.water_temp }}</td>
+        <td>{{ row.wind }}</td>
+        <td>{{ row.wave_height }}</td>
+
         <td>
             {% if row.image %}
-                <img src="/static/uploads/{{ row.image }}">
+                <img src="{{ url_for('static', filename='uploads/' ~ row.image) }}" 
+                     style="width:60px; border-radius:4px;">
             {% endif %}
         </td>
+
         <td>
-            <a href="/edit/{{ row.id }}">Edit</a> |
-            <a href="/delete/{{ row.id }}">Delete</a>
+            {% if current_user.role in ["write", "admin"] %}
+                <a href="/edit/{{ row.id }}">Edit</a> |
+                <a href="/delete/{{ row.id }}">Delete</a>
+            {% else %}
+                View Only
+            {% endif %}
         </td>
     </tr>
     {% endfor %}
 </table>
-
-<!-- MAP SCRIPT -->
-<script>
-    var map = L.map('map').setView([42.3, -71.0], 8);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 18
-    }).addTo(map);
-
-    var entries = {{ data|tojson }};
-
-    const speciesColors = {
-        "False Albacore": "green",
-        "Bluefish": "blue",
-        "Bonefish": "yellow",
-        "Barracuda": "orange",
-        "Bonito": "violet",
-        "Sea Bass": "red",
-        "Other": "grey"
-    };
-
-    function getColoredIcon(color) {
-        return L.icon({
-            iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
-            shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
-            iconSize: [25, 41],
-            iconAnchor: [12, 41],
-            popupAnchor: [1, -34],
-            shadowSize: [41, 41]
-        });
-    }
-
-    entries.forEach(function(entry) {
-        if (entry.lat && entry.lng) {
-            const color = speciesColors[entry.species] || "grey";
-
-            L.marker([entry.lat, entry.lng], {
-                icon: getColoredIcon(color)
-            })
-            .addTo(map)
-            .bindPopup(
-                `<strong>${entry.species || "Unknown species"}</strong><br>
-                 ${entry.date || ""}<br>
-                 ${entry.location || ""}`
-            );
-        }
-    });
-</script>
 
 {% endblock %}
 

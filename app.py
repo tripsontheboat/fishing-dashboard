@@ -10,6 +10,7 @@ from flask_login import (
     UserMixin
 )
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.config["UPLOAD_FOLDER"] = "static/uploads"
@@ -26,11 +27,12 @@ def get_user_connection():
     return conn
 
 class User(UserMixin):
-    def __init__(self, id, username, password_hash, role):
+    def __init__(self, id, username, password_hash, role, last_login=None):
         self.id = id
         self.username = username
         self.password_hash = password_hash
         self.role = role
+        self.last_login = last_login
 
     @staticmethod
     def get(user_id):
@@ -38,7 +40,7 @@ class User(UserMixin):
         row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
         conn.close()
         if row:
-            return User(row["id"], row["username"], row["password_hash"], row["role"])
+            return User(row["id"], row["username"], row["password_hash"], row["role"], row["last_login"])
         return None
 
     @staticmethod
@@ -47,7 +49,7 @@ class User(UserMixin):
         row = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
         conn.close()
         if row:
-            return User(row["id"], row["username"], row["password_hash"], row["role"])
+            return User(row["id"], row["username"], row["password_hash"], row["role"], row["last_login"])
         return None
 
     def check_password(self, password):
@@ -98,6 +100,14 @@ def login():
 
         user = User.find_by_username(username)
         if user and user.check_password(password):
+            conn = get_user_connection()
+            conn.execute(
+                "UPDATE users SET last_login = datetime('now') WHERE id = ?",
+                (user.id,)
+            )
+            conn.commit()
+            conn.close()
+
             login_user(user)
             return redirect("/")
         return "Invalid username or password"
@@ -112,6 +122,76 @@ def login():
 def logout():
     logout_user()
     return redirect("/login")
+
+# -----------------------------
+# USER LIST (ADMIN ONLY)
+# -----------------------------
+@app.route("/users")
+@login_required
+def users():
+    if current_user.role != "admin":
+        return "Access denied", 403
+
+    conn = get_user_connection()
+    rows = conn.execute("SELECT id, username, role, last_login FROM users").fetchall()
+    conn.close()
+
+    return render_template("users.html", users=rows)
+
+# -----------------------------
+# CREATE USER (ADMIN ONLY)
+# -----------------------------
+@app.route("/create_user", methods=["GET", "POST"])
+@login_required
+def create_user():
+    if current_user.role != "admin":
+        return "Access denied", 403
+
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+        role = request.form["role"]
+
+        hashed_pw = generate_password_hash(password)
+
+        conn = get_user_connection()
+        conn.execute(
+            "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
+            (username, hashed_pw, role)
+        )
+        conn.commit()
+        conn.close()
+
+        return redirect("/users")
+
+    return render_template("create_user.html")
+
+# -----------------------------
+# CHANGE PASSWORD
+# -----------------------------
+@app.route("/change_password", methods=["GET", "POST"])
+@login_required
+def change_password():
+    if request.method == "POST":
+        old_password = request.form["old_password"]
+        new_password = request.form["new_password"]
+
+        if not current_user.check_password(old_password):
+            return "Old password is incorrect", 400
+
+        new_hash = generate_password_hash(new_password)
+
+        conn = get_user_connection()
+        conn.execute(
+            "UPDATE users SET password_hash = ? WHERE id = ?",
+            (new_hash, current_user.id)
+        )
+        conn.commit()
+        conn.close()
+
+        return redirect("/")
+
+    return render_template("change_password.html")
 
 # -----------------------------
 # HOME PAGE
@@ -185,7 +265,7 @@ def index():
     )
 
 # -----------------------------
-# REPORT PAGE
+# REPORT PAGE (modernized)
 # -----------------------------
 @app.route("/report", methods=["GET"])
 @login_required
@@ -193,10 +273,7 @@ def index():
 def report():
     start = request.args.get("start")
     end = request.args.get("end")
-    species = request.args.get("species")
-    location = request.args.get("location")
-    water = request.args.get("water")
-    platform = request.args.get("platform")
+    species_filter = request.args.get("species")
 
     query = "SELECT * FROM observations WHERE 1=1"
     params = []
@@ -209,83 +286,47 @@ def report():
         query += " AND DATE(date) <= DATE(?)"
         params.append(end)
 
-    if species:
-        query += " AND species LIKE ?"
-        params.append(f"%{species}%")
+    if species_filter and species_filter != "all":
+        query += " AND species = ?"
+        params.append(species_filter)
 
-    if location:
-        query += " AND location LIKE ?"
-        params.append(f"%{location}%")
-
-    if water:
-        query += " AND water LIKE ?"
-        params.append(f"%{water}%")
-
-    if platform:
-        query += " AND platform LIKE ?"
-        params.append(f"%{platform}%")
+    query += " ORDER BY DATE(date) DESC"
 
     conn = get_db_connection()
+
+    species_raw = conn.execute(
+        "SELECT DISTINCT species FROM observations ORDER BY species ASC"
+    ).fetchall()
+    species_list = [dict(s) for s in species_raw]
+
     rows_raw = conn.execute(query, params).fetchall()
     rows = [dict(r) for r in rows_raw]
+
+    total_trips = len(rows)
+    total_fish = 0
+    species_set = set()
+
+    for r in rows:
+        try:
+            total_fish += int(r["count"]) if r["count"] else 0
+        except:
+            pass
+
+        if r["species"]:
+            species_set.add(r["species"])
+
+    unique_species = len(species_set)
+
     conn.close()
 
-    return render_template("report.html", rows=rows)
-
-# -----------------------------
-# CREATE USER (ADMIN ONLY)
-# -----------------------------
-@app.route("/create_user", methods=["GET", "POST"])
-@login_required
-def create_user():
-    if current_user.role != "admin":
-        return "Access denied", 403
-
-    if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
-        role = request.form["role"]
-
-        hashed_pw = generate_password_hash(password)
-
-        conn = get_user_connection()
-        conn.execute(
-            "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
-            (username, hashed_pw, role)
-        )
-        conn.commit()
-        conn.close()
-
-        return redirect("/")
-
-    return render_template("create_user.html")
-
-# -----------------------------
-# CHANGE PASSWORD
-# -----------------------------
-@app.route("/change_password", methods=["GET", "POST"])
-@login_required
-def change_password():
-    if request.method == "POST":
-        old_password = request.form["old_password"]
-        new_password = request.form["new_password"]
-
-        if not current_user.check_password(old_password):
-            return "Old password is incorrect", 400
-
-        new_hash = generate_password_hash(new_password)
-
-        conn = get_user_connection()
-        conn.execute(
-            "UPDATE users SET password_hash = ? WHERE id = ?",
-            (new_hash, current_user.id)
-        )
-        conn.commit()
-        conn.close()
-
-        return redirect("/")
-
-    return render_template("change_password.html")
+    return render_template(
+        "report.html",
+        data=rows,
+        species_list=species_list,
+        total_trips=total_trips,
+        total_fish=total_fish,
+        unique_species=unique_species
+    )
 
 # -----------------------------
 # ADD ENTRY
@@ -312,11 +353,11 @@ def add():
         lat = request.form.get("lat")
         lng = request.form.get("lng")
 
-        image_file = request.files["image"]
+        image_file = request.files.get("image")
         filename = None
 
         if image_file and image_file.filename != "":
-            filename = image_file.filename
+            filename = secure_filename(image_file.filename)
             image_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
             image_file.save(image_path)
 
@@ -345,10 +386,13 @@ def add():
 # -----------------------------
 @app.route("/edit/<int:id>", methods=["GET", "POST"])
 @login_required
-@role_required("write")
 def edit(id):
     conn = get_db_connection()
-    record = conn.execute("SELECT * FROM observations WHERE id = ?", (id,)).fetchone()
+    row = conn.execute("SELECT * FROM observations WHERE id = ?", (id,)).fetchone()
+
+    if not row:
+        conn.close()
+        return "Entry not found", 404
 
     if request.method == "POST":
         date = request.form["date"]
@@ -359,45 +403,39 @@ def edit(id):
         size = request.form["size"]
         water = request.form["water"]
         platform = request.form["platform"]
+        water_temp = request.form["water_temp"]
+        wind = request.form["wind"]
+        wave_height = request.form["wave_height"]
         comments = request.form["comments"]
+        lat = request.form["lat"]
+        lng = request.form["lng"]
 
-        water_temp = request.form.get("water_temp")
-        wind = request.form.get("wind")
-        wave_height = request.form.get("wave_height")
-
-        lat = request.form.get("lat")
-        lng = request.form.get("lng")
-
-        existing_image = request.form["existing_image"]
-        image_file = request.files["image"]
-
-        filename = existing_image
-
-        if image_file and image_file.filename != "":
-            filename = image_file.filename
-            image_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-            image_file.save(image_path)
+        image = row["image"]
+        file = request.files.get("image")
+        if file and file.filename != "":
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+            image = filename
 
         conn.execute(
             """
             UPDATE observations
-            SET date=?, location=?, species=?, count=?, bait=?, size=?, water=?, 
-                platform=?, comments=?, image=?, lat=?, lng=?, 
-                water_temp=?, wind=?, wave_height=?
+            SET date=?, location=?, species=?, count=?, bait=?, size=?, water=?, platform=?,
+                water_temp=?, wind=?, wave_height=?, comments=?, image=?, lat=?, lng=?
             WHERE id=?
             """,
             (
-                date, location, species, count, bait, size, water, platform, comments,
-                filename, lat, lng, water_temp, wind, wave_height, id
+                date, location, species, count, bait, size, water, platform,
+                water_temp, wind, wave_height, comments, image, lat, lng, id
             ),
         )
         conn.commit()
         conn.close()
-
         return redirect("/")
 
+    row_dict = dict(row)
     conn.close()
-    return render_template("edit.html", record=record)
+    return render_template("edit.html", row=row_dict)
 
 # -----------------------------
 # DELETE ENTRY
@@ -409,14 +447,19 @@ def delete(id):
     conn = get_db_connection()
     record = conn.execute("SELECT * FROM observations WHERE id = ?", (id,)).fetchone()
 
+    if not record:
+        conn.close()
+        return "Entry not found", 404
+
     if request.method == "POST":
         conn.execute("DELETE FROM observations WHERE id = ?", (id,))
         conn.commit()
         conn.close()
         return redirect("/")
 
+    record_dict = dict(record)
     conn.close()
-    return render_template("delete.html", record=record)
+    return render_template("delete.html", record=record_dict)
 
 # -----------------------------
 # RUN SERVER

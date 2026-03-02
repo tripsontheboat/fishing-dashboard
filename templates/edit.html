@@ -1,177 +1,120 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h1>Edit Fishing Entry</h1>
-<h3>Tap the map to update coordinates</h3>
+<h1>Edit Entry</h1>
 
-<!-- Leaflet CSS + JS -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<div class="form-card">
+    <form method="POST" enctype="multipart/form-data">
 
-<style>
-    .form-group {
-        margin-bottom: 10px;
-    }
-    .form-section {
-        margin-top: 16px;
-    }
-    label {
-        display: block;
-        font-weight: 600;
-        margin-bottom: 4px;
-    }
-    input, select, textarea {
-        width: 100%;
-        padding: 6px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-    }
-</style>
-
-<!-- MAP PICKER -->
-<div id="pickermap"
-     style="height: 300px; border: 2px solid #ccc; border-radius: 8px; margin-bottom: 20px;">
-</div>
-
-<form method="post" enctype="multipart/form-data">
-
-    <!-- 🐟 CATCH DETAILS -->
-    <div class="form-section">
-        <div class="form-group">
-            <label>Species</label>
-            <input type="text" name="species" value="{{ record.species }}" required>
+        <!-- Date -->
+        <div class="form-row">
+            <label>Date:</label>
+            <input type="date" name="date" value="{{ row.date }}" required>
         </div>
 
-        <div class="form-group">
-            <label>Size</label>
-            <input type="text" name="size" value="{{ record.size }}">
+        <!-- Location -->
+        <div class="form-row">
+            <label>Location:</label>
+            <input type="text" name="location" value="{{ row.location }}" required>
         </div>
 
-        <div class="form-group">
-            <label>Count</label>
-            <input type="number" name="count" value="{{ record.count }}">
+        <!-- Species -->
+        <div class="form-row">
+            <label>Species:</label>
+            <input type="text" name="species" value="{{ row.species }}" required>
         </div>
 
-        <div class="form-group">
-            <label>Existing Image</label><br>
-            {% if record.image %}
-                <img src="/static/uploads/{{ record.image }}" width="150"><br>
-            {% endif %}
-            <input type="hidden" name="existing_image" value="{{ record.image }}">
+        <!-- Count -->
+        <div class="form-row">
+            <label>Count:</label>
+            <input type="number" name="count" min="1" value="{{ row.count }}">
         </div>
 
-        <div class="form-group">
-            <label>Upload New Image</label>
+        <!-- Bait -->
+        <div class="form-row">
+            <label>Bait:</label>
+            <input type="text" name="bait" value="{{ row.bait }}">
+        </div>
+
+        <!-- Size -->
+        <div class="form-row">
+            <label>Size:</label>
+            <input type="text" name="size" value="{{ row.size }}">
+        </div>
+
+        <!-- Water Type -->
+        <div class="form-row">
+            <label>Water Type:</label>
+            <select name="water">
+                <option value="Saltwater" {% if row.water == "Saltwater" %}selected{% endif %}>Saltwater</option>
+                <option value="Freshwater" {% if row.water == "Freshwater" %}selected{% endif %}>Freshwater</option>
+            </select>
+        </div>
+
+        <!-- Platform -->
+        <div class="form-row">
+            <label>Platform:</label>
+            <select name="platform">
+                <option value="Boat" {% if row.platform == "Boat" %}selected{% endif %}>Boat</option>
+                <option value="Shore" {% if row.platform == "Shore" %}selected{% endif %}>Shore</option>
+                <option value="Dock" {% if row.platform == "Dock" %}selected{% endif %}>Dock</option>
+            </select>
+        </div>
+
+        <!-- Water Temp -->
+        <div class="form-row">
+            <label>Water Temp (°F):</label>
+            <input type="text" name="water_temp" value="{{ row.water_temp }}">
+        </div>
+
+        <!-- Wind -->
+        <div class="form-row">
+            <label>Wind:</label>
+            <input type="text" name="wind" value="{{ row.wind }}">
+        </div>
+
+        <!-- Wave Height -->
+        <div class="form-row">
+            <label>Wave Height:</label>
+            <input type="text" name="wave_height" value="{{ row.wave_height }}">
+        </div>
+
+        <!-- Comments -->
+        <div class="form-row">
+            <label>Comments:</label>
+            <textarea name="comments" rows="4">{{ row.comments }}</textarea>
+        </div>
+
+        <!-- Existing Image -->
+        {% if row.image %}
+        <div class="form-row">
+            <label>Current Image:</label>
+            <img src="{{ url_for('static', filename='uploads/' ~ row.image) }}" 
+                 style="width:120px; border-radius:6px; margin-bottom:10px;">
+        </div>
+        {% endif %}
+
+        <!-- Upload New Image -->
+        <div class="form-row">
+            <label>Replace Image:</label>
             <input type="file" name="image">
         </div>
-    </div>
 
-    <!-- 📍 LOCATION -->
-    <div class="form-section">
-        <div class="form-group">
-            <label>Waterbody</label>
-            <input type="text" name="location" value="{{ record.location }}" required>
+        <!-- Latitude -->
+        <div class="form-row">
+            <label>Latitude:</label>
+            <input type="text" name="lat" value="{{ row.lat }}">
         </div>
 
-        <div class="form-group">
-            <label>Latitude</label>
-            <input type="text" name="lat" value="{{ record.lat }}">
+        <!-- Longitude -->
+        <div class="form-row">
+            <label>Longitude:</label>
+            <input type="text" name="lng" value="{{ row.lng }}">
         </div>
 
-        <div class="form-group">
-            <label>Longitude</label>
-            <input type="text" name="lng" value="{{ record.lng }}">
-        </div>
-
-        <div class="form-group">
-            <label>Water Type</label>
-            <select name="water">
-                <option value="">Select</option>
-                <option value="Fresh" {% if record.water == "Fresh" %}selected{% endif %}>Fresh</option>
-                <option value="Salt" {% if record.water == "Salt" %}selected{% endif %}>Salt</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label>Platform</label>
-            <select name="platform">
-                <option value="">Select</option>
-                <option value="Boat" {% if record.platform == "Boat" %}selected{% endif %}>Boat</option>
-                <option value="Charter" {% if record.platform == "Charter" %}selected{% endif %}>Charter</option>
-                <option value="Ice" {% if record.platform == "Ice" %}selected{% endif %}>Ice</option>
-            </select>
-        </div>
-    </div>
-
-    <!-- 🌤️ CONDITIONS -->
-    <div class="form-section">
-        <div class="form-group">
-            <label>Date</label>
-            <input type="date" name="date" value="{{ record.date }}" required>
-        </div>
-
-        <div class="form-group">
-            <label>Lure / Bait</label>
-            <input type="text" name="bait" value="{{ record.bait }}">
-        </div>
-
-        <div class="form-group">
-            <label>Water Temp (°F)</label>
-            <input type="text" name="water_temp" value="{{ record.water_temp }}">
-        </div>
-
-        <div class="form-group">
-            <label>Wind</label>
-            <input type="text" name="wind" value="{{ record.wind }}">
-        </div>
-
-        <div class="form-group">
-            <label>Wave Height</label>
-            <input type="text" name="wave_height" value="{{ record.wave_height }}">
-        </div>
-    </div>
-
-    <!-- 📝 NOTES -->
-    <div class="form-section" style="margin-top: 20px;">
-        <div class="form-group">
-            <label>Comments</label>
-            <textarea name="comments">{{ record.comments }}</textarea>
-        </div>
-    </div>
-
-    <button type="submit">Save Changes</button>
-</form>
-
-<br>
-<a href="/">⬅ Back</a>
-
-<!-- MAP SCRIPT -->
-<script>
-    var startLat = {{ record.lat if record.lat else 42.3 }};
-    var startLng = {{ record.lng if record.lng else -71.0 }};
-
-    var pickermap = L.map('pickermap').setView([startLat, startLng], 10);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 18
-    }).addTo(pickermap);
-
-    var marker = L.marker([startLat, startLng]).addTo(pickermap);
-
-    pickermap.on('click', function(e) {
-        var lat = e.latlng.lat.toFixed(6);
-        var lng = e.latlng.lng.toFixed(6);
-
-        document.querySelector('input[name="lat"]').value = lat;
-        document.querySelector('input[name="lng"]').value = lng;
-
-        marker.setLatLng(e.latlng);
-    });
-
-    setTimeout(function() {
-        pickermap.invalidateSize();
-    }, 200);
-</script>
+        <button type="submit" class="save-btn">Save Changes</button>
+    </form>
+</div>
 
 {% endblock %}
 

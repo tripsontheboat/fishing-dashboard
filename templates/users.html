@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>User Management</h1>
+
+<div class="form-card">
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>Role</th>
+            <th>Last Login</th>
+        </tr>
+
+        {% for u in users %}
+        <tr>
+            <td>{{ u.id }}</td>
+            <td>{{ u.username }}</td>
+
+            <td>
+                {% if u.role == "admin" %}
+                    <span class="role-badge admin">Admin</span>
+                {% elif u.role == "write" %}
+                    <span class="role-badge write">Write</span>
+                {% else %}
+                    <span class="role-badge read">Read</span>
+                {% endif %}
+            </td>
+
+            <td>
+                {% if u.last_login %}
+                    {{ u.last_login }}
+                {% else %}
+                    Never
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <a href="/create_user" class="save-btn" style="margin-top:20px; display:inline-block;">
+        Create New User
+    </a>
+</div>
+
+{% endblock %}
+
