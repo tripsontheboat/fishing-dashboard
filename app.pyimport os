@@ -1,4 +1,3 @@
-import os
 import sqlite3
 from flask import Flask, render_template, request, redirect, abort
 from flask_login import (
@@ -165,7 +164,6 @@ def create_user():
         return redirect("/users")
 
     return render_template("create_user.html")
-
 # -----------------------------
 # CHANGE USER ROLE (ADMIN ONLY)
 # -----------------------------
@@ -296,74 +294,7 @@ def index():
     )
 
 # -----------------------------
-# TRIP SUMMARY PAGE
-# -----------------------------
-@app.route("/trip")
-@login_required
-@role_required("read")
-def trip_summary():
-    date = request.args.get("date")
-    location = request.args.get("location")
-
-    if not date or not location:
-        return "Missing trip parameters", 400
-
-    conn = get_db_connection()
-
-    rows_raw = conn.execute(
-        """
-        SELECT * FROM observations
-        WHERE date = ? AND location = ?
-        ORDER BY species ASC
-        """,
-        (date, location)
-    ).fetchall()
-
-    rows = [dict(r) for r in rows_raw]
-
-    total_fish = sum(int(r["count"]) for r in rows if r["count"])
-    species_set = {r["species"] for r in rows if r["species"]}
-    unique_species = len(species_set)
-
-    # Species counts for pie chart
-    species_counts = {}
-    for r in rows:
-        sp = r["species"]
-        if sp:
-            species_counts[sp] = species_counts.get(sp, 0) + int(r["count"] or 0)
-
-    # FIXED: Extract first valid lat/lng
-    trip_lat = None
-    trip_lng = None
-
-    for r in rows:
-        lat = r.get("lat")
-        lng = r.get("lng")
-
-        if lat not in (None, "", "None") and lng not in (None, "", "None"):
-            try:
-                trip_lat = float(lat)
-                trip_lng = float(lng)
-                break
-            except:
-                pass
-
-    conn.close()
-
-    return render_template(
-        "trip_summary.html",
-        date=date,
-        location=location,
-        data=rows,
-        total_fish=total_fish,
-        unique_species=unique_species,
-        species_counts=species_counts,
-        trip_lat=trip_lat,
-        trip_lng=trip_lng
-    )
-
-# -----------------------------
-# REPORT PAGE
+# REPORT PAGE (modernized)
 # -----------------------------
 @app.route("/report", methods=["GET"])
 @login_required
@@ -466,7 +397,7 @@ def add():
             INSERT INTO observations 
             (date, location, species, count, bait, size, water, platform, comments,
              image, lat, lng, water_temp, wind, wave_height, angler)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 date, location, species, count, bait, size, water, platform, comments,
@@ -479,7 +410,6 @@ def add():
         return redirect("/")
 
     return render_template("add.html")
-
 # -----------------------------
 # EDIT ENTRY
 # -----------------------------
@@ -510,6 +440,7 @@ def edit(id):
         lng = request.form["lng"]
         angler = request.form.get("angler")
 
+        # Handle image
         image = row["image"]
         file = request.files.get("image")
         if file and file.filename != "":
@@ -517,6 +448,7 @@ def edit(id):
             file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
             image = filename
 
+        # Correct UPDATE statement
         conn.execute(
             """
             UPDATE observations
@@ -567,4 +499,3 @@ def delete(id):
 # -----------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
-

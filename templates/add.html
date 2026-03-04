@@ -1,106 +1,109 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h1>Add New Entry</h1>
+<h1>Add New Observation</h1>
 
 <div class="form-card">
     <form method="POST" enctype="multipart/form-data">
 
-        <!-- Date -->
+        <!-- Row 1 -->
         <div class="form-row">
             <label>Date:</label>
             <input type="date" name="date" required>
         </div>
 
-        <!-- Location -->
         <div class="form-row">
             <label>Location:</label>
-            <input type="text" name="location" placeholder="Enter location" required>
+            <input type="text" name="location" placeholder="Where did you fish?" required>
         </div>
 
-        <!-- Species -->
+        <!-- Row 2 -->
         <div class="form-row">
             <label>Species:</label>
             <input type="text" name="species" placeholder="Species caught" required>
         </div>
 
-        <!-- Count -->
         <div class="form-row">
             <label>Count:</label>
-            <input type="number" name="count" min="1" placeholder="Number caught">
+            <input type="number" name="count" min="0" placeholder="How many?" required>
         </div>
 
-        <!-- Bait -->
+        <!-- Row 3 -->
         <div class="form-row">
             <label>Bait:</label>
             <input type="text" name="bait" placeholder="Bait used">
         </div>
 
-        <!-- Size -->
         <div class="form-row">
             <label>Size:</label>
             <input type="text" name="size" placeholder="Size (optional)">
         </div>
 
-        <!-- Water Type -->
+        <!-- Row 4 -->
         <div class="form-row">
             <label>Water Type:</label>
             <select name="water">
-                <option value="Saltwater">Saltwater</option>
-                <option value="Freshwater">Freshwater</option>
+                <option value="">Select</option>
+                <option value="Fresh">Fresh</option>
+                <option value="Salt">Salt</option>
+	     <option value=“Ice”>Ice</option>
+                <option value="Brackish">Brackish</option>
             </select>
         </div>
 
-        <!-- Platform -->
         <div class="form-row">
             <label>Platform:</label>
             <select name="platform">
+                <option value="">Select</option>
                 <option value="Boat">Boat</option>
+                <option value="Kayak">Kayak</option>
+                <option value="Pier">Pier</option>
                 <option value="Shore">Shore</option>
-                <option value="Dock">Dock</option>
             </select>
         </div>
 
-        <!-- Water Temp -->
+        <!-- Row 5 -->
         <div class="form-row">
             <label>Water Temp (°F):</label>
-            <input type="text" name="water_temp" placeholder="Example: 68°F">
+            <input type="number" name="water_temp" step="0.1" placeholder="Optional">
         </div>
 
-        <!-- Wind -->
         <div class="form-row">
             <label>Wind:</label>
-            <input type="text" name="wind" placeholder="Example: 10 mph NW">
+            <input type="text" name="wind" placeholder="Wind conditions">
         </div>
 
-        <!-- Wave Height -->
+        <!-- Row 6 -->
         <div class="form-row">
             <label>Wave Height:</label>
-            <input type="text" name="wave_height" placeholder="Example: 2 ft">
+            <input type="text" name="wave_height" placeholder="Wave height">
         </div>
 
-        <!-- Comments -->
         <div class="form-row">
-            <label>Comments:</label>
-            <textarea name="comments" rows="4" placeholder="Additional notes..."></textarea>
+            <label>Image:</label>
+            <input type="file" name="image" accept="image/*">
         </div>
 
-        <!-- Image Upload -->
-        <div class="form-row">
-            <label>Upload Image:</label>
-            <input type="file" name="image">
-        </div>
-
-        <!-- Latitude -->
+        <!-- Row 7 -->
         <div class="form-row">
             <label>Latitude:</label>
             <input type="text" name="lat" placeholder="Optional">
         </div>
 
-        <!-- Longitude -->
         <div class="form-row">
             <label>Longitude:</label>
             <input type="text" name="lng" placeholder="Optional">
+        
+		</div>
+        <div class="form-row">
+        <label>Angler:</label>
+        <input type="text" name="angler" placeholder="Who caught the fish?" required>
+       </div>
+
+        <!-- Comments -->
+        <div class="form-row" style="grid-column: 1 / -1;">
+            <label>Comments:</label>
+            <textarea name="comments" rows="3" placeholder="Additional notes..."></textarea>
         </div>
 
         <button type="submit" class="save-btn">Save Entry</button>
@@ -108,4 +111,3 @@
 </div>
 
 {% endblock %}
-

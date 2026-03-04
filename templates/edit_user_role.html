@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Change User Role</h1>
+
+<div class="form-card">
+    <form method="POST">
+
+        <div class="form-row">
+            <label>Username:</label>
+            <input type="text" value="{{ user.username }}" disabled>
+        </div>
+
+        <div class="form-row">
+            <label>Current Role:</label>
+            <input type="text" value="{{ user.role }}" disabled>
+        </div>
+
+        <div class="form-row">
+            <label>New Role:</label>
+            <select name="role" required>
+                <option value="read"  {% if user.role == "read" %}selected{% endif %}>Read Only</option>
+                <option value="write" {% if user.role == "write" %}selected{% endif %}>Write</option>
+                <option value="admin" {% if user.role == "admin" %}selected{% endif %}>Admin</option>
+            </select>
+        </div>
+
+        <button type="submit" class="save-btn">Update Role</button>
+    </form>
+</div>
+
+{% endblock %}
+

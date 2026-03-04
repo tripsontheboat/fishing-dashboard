@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Leaflet Map + Chart.js -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<h1>Trip Summary</h1>
+
+<!-- Summary Cards -->
+<div class="stats-container">
+    <div class="stat-card">
+        <h2>{{ date }}</h2>
+        <p>Date</p>
+    </div>
+
+    <div class="stat-card">
+        <h2>{{ location }}</h2>
+        <p>Location</p>
+    </div>
+
+    <div class="stat-card">
+        <h2>{{ total_fish }}</h2>
+        <p>Total Fish</p>
+    </div>
+
+    <div class="stat-card">
+        <h2>{{ unique_species }}</h2>
+        <p>Unique Species</p>
+    </div>
+</div>
+
+<!-- Photo Gallery -->
+<h2 style="margin-top: 30px;">Trip Photos</h2>
+
+<div style="display:flex; flex-wrap:wrap; gap:15px; margin-bottom:25px;">
+    {% set has_photos = false %}
+    {% for row in data %}
+        {% if row.image %}
+            {% set has_photos = true %}
+            <div style="border:1px solid #ccc; padding:5px; border-radius:6px;">
+                <img src="{{ url_for('static', filename='uploads/' ~ row.image) }}"
+                     style="width:150px; height:auto; border-radius:6px;">
+                <p style="text-align:center; margin-top:5px; font-size:0.9em;">
+                    {{ row.species }} ({{ row.count }})
+                </p>
+            </div>
+        {% endif %}
+    {% endfor %}
+
+    {% if not has_photos %}
+        <p>No photos uploaded for this trip.</p>
+    {% endif %}
+</div>
+
+<!-- Map Section -->
+<h2>Trip Location</h2>
+
+{% if trip_lat and trip_lng %}
+<div id="map" style="height: 300px; margin-bottom: 30px; border-radius: 8px;"></div>
+{% else %}
+<p>No GPS coordinates recorded for this trip.</p>
+{% endif %}
+
+<!-- Species Pie Chart -->
+<h2>Species Summary</h2>
+<canvas id="speciesChart" style="max-width: 400px; margin-bottom: 30px;"></canvas>
+
+<!-- Catch Table -->
+<h2>Catches</h2>
+
+<table>
+    <tr>
+        <th>Species</th>
+        <th>Count</th>
+        <th>Angler</th>
+        <th>Bait</th>
+        <th>Size</th>
+        <th>Water Temp</th>
+        <th>Wind</th>
+        <th>Wave Height</th>
+        <th>Image</th>
+        <th>Actions</th>
+    </tr>
+
+    {% for row in data %}
+    <tr>
+        <td>{{ row.species }}</td>
+        <td>{{ row.count }}</td>
+        <td>{{ row.angler }}</td>
+        <td>{{ row.bait }}</td>
+        <td>{{ row.size }}</td>
+        <td>{{ row.water_temp }}</td>
+        <td>{{ row.wind }}</td>
+        <td>{{ row.wave_height }}</td>
+
+        <td>
+            {% if row.image %}
+                <img src="{{ url_for('static', filename='uploads/' ~ row.image) }}"
+                     style="width:60px; border-radius:4px;">
+            {% endif %}
+        </td>
+
+        <td>
+            <a href="/edit/{{ row.id }}">Edit</a> |
+            <a href="/delete/{{ row.id }}">Delete</a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
+<a href="/" class="save-btn" style="margin-top:20px; display:inline-block;">Back to Dashboard</a>
+
+<!-- JavaScript for Pie Chart -->
+<script>
+    const speciesLabels = {{ species_counts.keys() | list | tojson }};
+    const speciesValues = {{ species_counts.values() | list | tojson }};
+
+    const ctx = document.getElementById('speciesChart').getContext('2d');
+
+    new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: speciesLabels,
+            datasets: [{
+                data: speciesValues,
+                backgroundColor: [
+                    '#4e79a7', '#f28e2b', '#e15759',
+                    '#76b7b2', '#59a14f', '#edc948',
+                    '#b07aa1', '#ff9da7', '#9c755f', '#bab0ab'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+</script>
+
+<!-- JavaScript for Map -->
+{% if trip_lat and trip_lng %}
+<script>
+    const lat = parseFloat("{{ trip_lat }}");
+    const lng = parseFloat("{{ trip_lng }}");
+
+    const map = L.map('map').setView([lat, lng], 14);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    L.marker([lat, lng])
+        .addTo(map)
+        .bindPopup("{{ location }}")
+        .openPopup();
+</script>
+{% endif %}
+
+{% endblock %}
+

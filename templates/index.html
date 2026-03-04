@@ -57,6 +57,7 @@
         <th>Location</th>
         <th>Species</th>
         <th>Count</th>
+        <th>Angler</th>
         <th>Bait</th>
         <th>Size</th>
         <th>Water</th>
@@ -66,6 +67,7 @@
         <th>Wave Height</th>
         <th>Image</th>
         <th>Actions</th>
+        <th>Trip</th>
     </tr>
 
     {% for row in data %}
@@ -74,6 +76,7 @@
         <td>{{ row.location }}</td>
         <td>{{ row.species }}</td>
         <td>{{ row.count }}</td>
+        <td>{{ row.angler }}</td>
         <td>{{ row.bait }}</td>
         <td>{{ row.size }}</td>
         <td>{{ row.water }}</td>
@@ -96,6 +99,10 @@
             {% else %}
                 View Only
             {% endif %}
+        </td>
+
+        <td>
+            <a href="/trip?date={{ row.date }}&location={{ row.location }}">View Trip</a>
         </td>
     </tr>
     {% endfor %}

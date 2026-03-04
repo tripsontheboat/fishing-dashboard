@@ -10,6 +10,7 @@
             <th>Username</th>
             <th>Role</th>
             <th>Last Login</th>
+            <th>Actions</th>
         </tr>
 
         {% for u in users %}
@@ -33,6 +34,14 @@
                 {% else %}
                     Never
                 {% endif %}
+            </td>
+
+            <td>
+                <a href="/change_role/{{ u.id }}" 
+                   class="save-btn" 
+                   style="padding:4px 10px; font-size:12px;">
+                    Change Role
+                </a>
             </td>
         </tr>
         {% endfor %}
