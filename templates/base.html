@@ -173,8 +173,9 @@
             text-decoration: underline;
         }
     </style>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 </head>
 
@@ -190,6 +191,7 @@
     <div class="nav-left">
         <a href="/">Dashboard</a>
         <a href="/report">Report</a>
+        <a href="/heatmap">Species Heatmap</a>   <!-- ⭐ NEW LINK ADDED HERE -->
 
         {% if current_user.is_authenticated and current_user.role == "admin" %}
             <a href="/add">Add Entry</a>

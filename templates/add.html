@@ -46,7 +46,7 @@
                 <option value="">Select</option>
                 <option value="Fresh">Fresh</option>
                 <option value="Salt">Salt</option>
-	     <option value=“Ice”>Ice</option>
+                <option value="Ice">Ice</option>
                 <option value="Brackish">Brackish</option>
             </select>
         </div>
@@ -93,12 +93,12 @@
         <div class="form-row">
             <label>Longitude:</label>
             <input type="text" name="lng" placeholder="Optional">
-        
-		</div>
+        </div>
+
         <div class="form-row">
-        <label>Angler:</label>
-        <input type="text" name="angler" placeholder="Who caught the fish?" required>
-       </div>
+            <label>Angler:</label>
+            <input type="text" name="angler" placeholder="Who caught the fish?" required>
+        </div>
 
         <!-- Comments -->
         <div class="form-row" style="grid-column: 1 / -1;">
@@ -106,8 +106,15 @@
             <textarea name="comments" rows="3" placeholder="Additional notes..."></textarea>
         </div>
 
+        <!-- YouTube Link -->
+        <div class="form-row" style="grid-column: 1 / -1;">
+            <label>YouTube Link (optional):</label>
+            <input type="text" name="youtube_url" placeholder="https://youtube.com/..." style="width: 100%; margin-bottom: 10px;">
+        </div>
+
         <button type="submit" class="save-btn">Save Entry</button>
     </form>
 </div>
 
 {% endblock %}
+

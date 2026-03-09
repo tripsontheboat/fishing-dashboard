@@ -78,10 +78,12 @@
             <label>Wave Height:</label>
             <input type="text" name="wave_height" value="{{ row.wave_height }}">
         </div>
-		<div class="form-row">
-   		 <label>Angler:</label>
-    	<input type="text" name="angler" value="{{ row.angler }}">
-		</div>
+
+        <!-- Angler -->
+        <div class="form-row">
+            <label>Angler:</label>
+            <input type="text" name="angler" value="{{ row.angler }}">
+        </div>
 
         <!-- Comments -->
         <div class="form-row">
@@ -116,8 +118,15 @@
             <input type="text" name="lng" value="{{ row.lng }}">
         </div>
 
+        <!-- YouTube Link -->
+        <div class="form-row">
+            <label>YouTube Link:</label>
+            <input type="text" name="youtube_url" value="{{ row.youtube_url }}" style="width: 100%; margin-bottom: 10px;">
+        </div>
+
         <button type="submit" class="save-btn">Save Changes</button>
     </form>
 </div>
 
 {% endblock %}
+

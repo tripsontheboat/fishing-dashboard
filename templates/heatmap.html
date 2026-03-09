@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+<h1>Species Heatmap</h1>
+
+
+<div id="heatmap" style="width:900px; height:600px;"></div>
+
+<script>
+    const heatmapData = {{ heatmap_data | tojson }};
+
+    const species = Object.keys(heatmapData);
+    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+    // Build Z matrix (species x months)
+    const z = species.map(sp => {
+        return months.map((m, i) => heatmapData[sp][i+1]);
+    });
+
+    Plotly.newPlot('heatmap', [{
+        z: z,
+        x: months,
+        y: species,
+        type: 'heatmap',
+        colorscale: [
+            [0, '#f0f0f0'],   // zero catches
+            [0.2, '#add8e6'],
+            [0.4, '#5dade2'],
+            [0.6, '#2874a6'],
+            [1, '#0b3c5d']
+        ],
+        hoverongaps: false
+    }], {
+        title: 'Species by Month Heatmap',
+        xaxis: { title: 'Month' },
+        yaxis: { title: 'Species' }
+    });
+</script>
+
+{% endblock %}
+

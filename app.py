@@ -325,14 +325,12 @@ def trip_summary():
     species_set = {r["species"] for r in rows if r["species"]}
     unique_species = len(species_set)
 
-    # Species counts for pie chart
     species_counts = {}
     for r in rows:
         sp = r["species"]
         if sp:
             species_counts[sp] = species_counts.get(sp, 0) + int(r["count"] or 0)
 
-    # FIXED: Extract first valid lat/lng
     trip_lat = None
     trip_lng = None
 
@@ -348,6 +346,8 @@ def trip_summary():
             except:
                 pass
 
+    youtube_url = rows[0].get("youtube_url") if rows else None
+
     conn.close()
 
     return render_template(
@@ -359,7 +359,8 @@ def trip_summary():
         unique_species=unique_species,
         species_counts=species_counts,
         trip_lat=trip_lat,
-        trip_lng=trip_lng
+        trip_lng=trip_lng,
+        youtube_url=youtube_url
     )
 
 # -----------------------------
@@ -452,6 +453,8 @@ def add():
         lng = request.form.get("lng")
         angler = request.form["angler"]
 
+        youtube_url = request.form.get("youtube_url")
+
         image_file = request.files.get("image")
         filename = None
 
@@ -465,12 +468,12 @@ def add():
             """
             INSERT INTO observations 
             (date, location, species, count, bait, size, water, platform, comments,
-             image, lat, lng, water_temp, wind, wave_height, angler)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             image, lat, lng, water_temp, wind, wave_height, angler, youtube_url)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 date, location, species, count, bait, size, water, platform, comments,
-                filename, lat, lng, water_temp, wind, wave_height, angler
+                filename, lat, lng, water_temp, wind, wave_height, angler, youtube_url
             ),
         )
         conn.commit()
@@ -509,6 +512,7 @@ def edit(id):
         lat = request.form["lat"]
         lng = request.form["lng"]
         angler = request.form.get("angler")
+        youtube_url = request.form.get("youtube_url")
 
         image = row["image"]
         file = request.files.get("image")
@@ -521,12 +525,12 @@ def edit(id):
             """
             UPDATE observations
             SET date=?, location=?, species=?, count=?, bait=?, size=?, water=?, platform=?,
-                water_temp=?, wind=?, wave_height=?, comments=?, image=?, lat=?, lng=?, angler=?
+                water_temp=?, wind=?, wave_height=?, comments=?, image=?, lat=?, lng=?, angler=?, youtube_url=?
             WHERE id=?
             """,
             (
                 date, location, species, count, bait, size, water, platform,
-                water_temp, wind, wave_height, comments, image, lat, lng, angler, id
+                water_temp, wind, wave_height, comments, image, lat, lng, angler, youtube_url, id
             )
         )
 
@@ -537,6 +541,36 @@ def edit(id):
     row_dict = dict(row)
     conn.close()
     return render_template("edit.html", row=row_dict)
+
+# -----------------------------
+# HEATMAP
+# -----------------------------
+@app.route("/heatmap")
+@login_required
+@role_required("read")
+def heatmap():
+    conn = get_db_connection()
+
+    rows = conn.execute("""
+        SELECT species, date, count
+        FROM observations
+        WHERE species IS NOT NULL AND species != ''
+    """).fetchall()
+
+    conn.close()
+
+    heatmap_data = {}
+    for r in rows:
+        species = r["species"]
+        month = int(r["date"][5:7])
+        count = int(r["count"] or 0)
+
+        if species not in heatmap_data:
+            heatmap_data[species] = {m: 0 for m in range(1, 13)}
+
+        heatmap_data[species][month] += count
+
+    return render_template("heatmap.html", heatmap_data=heatmap_data)
 
 # -----------------------------
 # DELETE ENTRY

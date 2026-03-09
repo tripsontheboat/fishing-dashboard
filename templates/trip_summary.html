@@ -31,6 +31,37 @@
     </div>
 </div>
 
+<!-- YouTube Video Section -->
+{% if youtube_url %}
+<h2 style="margin-top: 30px;">Trip Video</h2>
+
+{% set video_id = None %}
+
+{# Extract YouTube video ID from all common formats #}
+{% if "v=" in youtube_url %}
+    {% set video_id = youtube_url.split("v=")[1].split("&")[0] %}
+{% elif "youtu.be/" in youtube_url %}
+    {% set video_id = youtube_url.split("youtu.be/")[1].split("?")[0] %}
+{% elif "embed/" in youtube_url %}
+    {% set video_id = youtube_url.split("embed/")[1].split("?")[0] %}
+{% endif %}
+
+{% if video_id %}
+<div style="margin-bottom: 30px;">
+    <iframe width="560" height="315"
+            src="https://www.youtube.com/embed/{{ video_id }}"
+            title="YouTube video player"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+            style="border-radius: 8px;">
+    </iframe>
+</div>
+{% else %}
+<p>Invalid YouTube link: {{ youtube_url }}</p>
+{% endif %}
+{% endif %}
+
 <!-- Photo Gallery -->
 <h2 style="margin-top: 30px;">Trip Photos</h2>
 

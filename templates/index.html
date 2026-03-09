@@ -103,6 +103,14 @@
 
         <td>
             <a href="/trip?date={{ row.date }}&location={{ row.location }}">View Trip</a>
+
+            {% if row.youtube_url %}
+                <a href="{{ row.youtube_url }}" target="_blank">
+                    <img src="{{ url_for('static', filename='icons/youtube.png') }}"
+                         title="Watch Trip Video"
+                         style="width:20px; margin-left:6px; vertical-align:middle;">
+                </a>
+            {% endif %}
         </td>
     </tr>
     {% endfor %}
