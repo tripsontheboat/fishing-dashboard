@@ -1,5 +1,7 @@
 import os
 import sqlite3
+import psycopg2
+import psycopg2.extras
 from flask import Flask, render_template, request, redirect, abort
 from flask_login import (
     LoginManager,
@@ -18,13 +20,27 @@ app.config["SECRET_KEY"] = "super-secret-key"
 
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
+# -------------------------------------------------
+# UNIVERSAL DB CONNECTION (SQLite locally, Postgres on Render)
+# -------------------------------------------------
+def get_db():
+    postgres_url = os.getenv("POSTGRES_URL")
+
+    if postgres_url:
+        return psycopg2.connect(
+            postgres_url,
+            cursor_factory=psycopg2.extras.RealDictCursor
+        )
+    else:
+        conn = sqlite3.connect("mydatabase.db")
+        conn.row_factory = sqlite3.Row
+        return conn
+
 # -----------------------------
 # USER + AUTH SETUP
 # -----------------------------
 def get_user_connection():
-    conn = sqlite3.connect("mydatabase.db")
-    conn.row_factory = sqlite3.Row
-    return conn
+    return get_db()
 
 class User(UserMixin):
     def __init__(self, id, username, password_hash, role, last_login=None):
@@ -37,7 +53,9 @@ class User(UserMixin):
     @staticmethod
     def get(user_id):
         conn = get_user_connection()
-        row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+        row = cur.fetchone()
         conn.close()
         if row:
             return User(row["id"], row["username"], row["password_hash"], row["role"], row["last_login"])
@@ -46,7 +64,9 @@ class User(UserMixin):
     @staticmethod
     def find_by_username(username):
         conn = get_user_connection()
-        row = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM users WHERE username = %s", (username,))
+        row = cur.fetchone()
         conn.close()
         if row:
             return User(row["id"], row["username"], row["password_hash"], row["role"], row["last_login"])
@@ -85,9 +105,7 @@ def role_required(role):
 # OBSERVATION DB CONNECTION
 # -----------------------------
 def get_db_connection():
-    conn = sqlite3.connect("mydatabase.db")
-    conn.row_factory = sqlite3.Row
-    return conn
+    return get_db()
 
 # -----------------------------
 # LOGIN
@@ -101,8 +119,9 @@ def login():
         user = User.find_by_username(username)
         if user and user.check_password(password):
             conn = get_user_connection()
-            conn.execute(
-                "UPDATE users SET last_login = datetime('now') WHERE id = ?",
+            cur = conn.cursor()
+            cur.execute(
+                "UPDATE users SET last_login = NOW() WHERE id = %s",
                 (user.id,)
             )
             conn.commit()
@@ -133,7 +152,9 @@ def users():
         return "Access denied", 403
 
     conn = get_user_connection()
-    rows = conn.execute("SELECT id, username, role, last_login FROM users").fetchall()
+    cur = conn.cursor()
+    cur.execute("SELECT id, username, role, last_login FROM users")
+    rows = cur.fetchall()
     conn.close()
 
     return render_template("users.html", users=rows)
@@ -155,8 +176,9 @@ def create_user():
         hashed_pw = generate_password_hash(password)
 
         conn = get_user_connection()
-        conn.execute(
-            "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO users (username, password_hash, role) VALUES (%s, %s, %s)",
             (username, hashed_pw, role)
         )
         conn.commit()
@@ -176,9 +198,9 @@ def change_role(id):
         return "Access denied", 403
 
     conn = get_user_connection()
-    user = conn.execute(
-        "SELECT id, username, role FROM users WHERE id = ?", (id,)
-    ).fetchone()
+    cur = conn.cursor()
+    cur.execute("SELECT id, username, role FROM users WHERE id = %s", (id,))
+    user = cur.fetchone()
 
     if not user:
         conn.close()
@@ -186,8 +208,8 @@ def change_role(id):
 
     if request.method == "POST":
         new_role = request.form["role"]
-        conn.execute(
-            "UPDATE users SET role = ? WHERE id = ?",
+        cur.execute(
+            "UPDATE users SET role = %s WHERE id = %s",
             (new_role, id)
         )
         conn.commit()
@@ -213,8 +235,9 @@ def change_password():
         new_hash = generate_password_hash(new_password)
 
         conn = get_user_connection()
-        conn.execute(
-            "UPDATE users SET password_hash = ? WHERE id = ?",
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE users SET password_hash = %s WHERE id = %s",
             (new_hash, current_user.id)
         )
         conn.commit()
@@ -240,49 +263,41 @@ def index():
     params = []
 
     if start:
-        query += " AND DATE(date) >= DATE(?)"
+        query += " AND date >= %s"
         params.append(start)
 
     if end:
-        query += " AND DATE(date) <= DATE(?)"
+        query += " AND date <= %s"
         params.append(end)
 
     if species_filter and species_filter != "all":
-        query += " AND species = ?"
+        query += " AND species = %s"
         params.append(species_filter)
 
     if sort == "oldest":
-        query += " ORDER BY DATE(date) ASC"
+        query += " ORDER BY date ASC"
     else:
-        query += " ORDER BY DATE(date) DESC"
+        query += " ORDER BY date DESC"
 
     conn = get_db_connection()
+    cur = conn.cursor()
 
-    species_raw = conn.execute(
-        "SELECT DISTINCT species FROM observations ORDER BY species ASC"
-    ).fetchall()
-    species_list = [dict(s) for s in species_raw]
+    cur.execute("SELECT DISTINCT species FROM observations ORDER BY species ASC")
+    species_list = cur.fetchall()
 
-    rows_raw = conn.execute(query, params).fetchall()
-    rows = [dict(r) for r in rows_raw]
+    cur.execute(query, params)
+    rows = cur.fetchall()
 
     total_trips = len(rows)
-    total_fish = 0
+    total_fish = sum(int(r["count"] or 0) for r in rows)
     species_counts = {}
 
     for r in rows:
-        try:
-            total_fish += int(r["count"]) if r["count"] else 0
-        except:
-            pass
-
         sp = r["species"]
         if sp:
             species_counts[sp] = species_counts.get(sp, 0) + 1
 
-    most_common_species = None
-    if species_counts:
-        most_common_species = max(species_counts, key=species_counts.get)
+    most_common_species = max(species_counts, key=species_counts.get) if species_counts else None
 
     conn.close()
 
@@ -309,19 +324,19 @@ def trip_summary():
         return "Missing trip parameters", 400
 
     conn = get_db_connection()
+    cur = conn.cursor()
 
-    rows_raw = conn.execute(
+    cur.execute(
         """
         SELECT * FROM observations
-        WHERE date = ? AND location = ?
+        WHERE date = %s AND location = %s
         ORDER BY species ASC
         """,
         (date, location)
-    ).fetchall()
+    )
+    rows = cur.fetchall()
 
-    rows = [dict(r) for r in rows_raw]
-
-    total_fish = sum(int(r["count"]) for r in rows if r["count"])
+    total_fish = sum(int(r["count"] or 0) for r in rows)
     species_set = {r["species"] for r in rows if r["species"]}
     unique_species = len(species_set)
 
@@ -337,8 +352,7 @@ def trip_summary():
     for r in rows:
         lat = r.get("lat")
         lng = r.get("lng")
-
-        if lat not in (None, "", "None") and lng not in (None, "", "None"):
+        if lat and lng:
             try:
                 trip_lat = float(lat)
                 trip_lng = float(lng)
@@ -378,43 +392,31 @@ def report():
     params = []
 
     if start:
-        query += " AND DATE(date) >= DATE(?)"
+        query += " AND date >= %s"
         params.append(start)
 
     if end:
-        query += " AND DATE(date) <= DATE(?)"
+        query += " AND date <= %s"
         params.append(end)
 
     if species_filter and species_filter != "all":
-        query += " AND species = ?"
+        query += " AND species = %s"
         params.append(species_filter)
 
-    query += " ORDER BY DATE(date) DESC"
+    query += " ORDER BY date DESC"
 
     conn = get_db_connection()
+    cur = conn.cursor()
 
-    species_raw = conn.execute(
-        "SELECT DISTINCT species FROM observations ORDER BY species ASC"
-    ).fetchall()
-    species_list = [dict(s) for s in species_raw]
+    cur.execute("SELECT DISTINCT species FROM observations ORDER BY species ASC")
+    species_list = cur.fetchall()
 
-    rows_raw = conn.execute(query, params).fetchall()
-    rows = [dict(r) for r in rows_raw]
+    cur.execute(query, params)
+    rows = cur.fetchall()
 
     total_trips = len(rows)
-    total_fish = 0
-    species_set = set()
-
-    for r in rows:
-        try:
-            total_fish += int(r["count"]) if r["count"] else 0
-        except:
-            pass
-
-        if r["species"]:
-            species_set.add(r["species"])
-
-    unique_species = len(species_set)
+    total_fish = sum(int(r["count"] or 0) for r in rows)
+    unique_species = len({r["species"] for r in rows if r["species"]})
 
     conn.close()
 
@@ -464,18 +466,21 @@ def add():
             image_file.save(image_path)
 
         conn = get_db_connection()
-        conn.execute(
+        cur = conn.cursor()
+
+        cur.execute(
             """
             INSERT INTO observations 
             (date, location, species, count, bait, size, water, platform, comments,
              image, lat, lng, water_temp, wind, wave_height, angler, youtube_url)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
                 date, location, species, count, bait, size, water, platform, comments,
                 filename, lat, lng, water_temp, wind, wave_height, angler, youtube_url
             ),
         )
+
         conn.commit()
         conn.close()
 
@@ -490,7 +495,10 @@ def add():
 @login_required
 def edit(id):
     conn = get_db_connection()
-    row = conn.execute("SELECT * FROM observations WHERE id = ?", (id,)).fetchone()
+    cur = conn.cursor()
+
+    cur.execute("SELECT * FROM observations WHERE id = %s", (id,))
+    row = cur.fetchone()
 
     if not row:
         conn.close()
@@ -521,12 +529,12 @@ def edit(id):
             file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
             image = filename
 
-        conn.execute(
+        cur.execute(
             """
             UPDATE observations
-            SET date=?, location=?, species=?, count=?, bait=?, size=?, water=?, platform=?,
-                water_temp=?, wind=?, wave_height=?, comments=?, image=?, lat=?, lng=?, angler=?, youtube_url=?
-            WHERE id=?
+            SET date=%s, location=%s, species=%s, count=%s, bait=%s, size=%s, water=%s, platform=%s,
+                water_temp=%s, wind=%s, wave_height=%s, comments=%s, image=%s, lat=%s, lng=%s, angler=%s, youtube_url=%s
+            WHERE id=%s
             """,
             (
                 date, location, species, count, bait, size, water, platform,
@@ -538,9 +546,8 @@ def edit(id):
         conn.close()
         return redirect("/")
 
-    row_dict = dict(row)
     conn.close()
-    return render_template("edit.html", row=row_dict)
+    return render_template("edit.html", row=row)
 
 # -----------------------------
 # HEATMAP
@@ -550,12 +557,14 @@ def edit(id):
 @role_required("read")
 def heatmap():
     conn = get_db_connection()
+    cur = conn.cursor()
 
-    rows = conn.execute("""
+    cur.execute("""
         SELECT species, date, count
         FROM observations
         WHERE species IS NOT NULL AND species != ''
-    """).fetchall()
+    """)
+    rows = cur.fetchall()
 
     conn.close()
 
@@ -580,21 +589,23 @@ def heatmap():
 @role_required("write")
 def delete(id):
     conn = get_db_connection()
-    record = conn.execute("SELECT * FROM observations WHERE id = ?", (id,)).fetchone()
+    cur = conn.cursor()
+
+    cur.execute("SELECT * FROM observations WHERE id = %s", (id,))
+    record = cur.fetchone()
 
     if not record:
         conn.close()
         return "Entry not found", 404
 
     if request.method == "POST":
-        conn.execute("DELETE FROM observations WHERE id = ?", (id,))
+        cur.execute("DELETE FROM observations WHERE id = %s", (id,))
         conn.commit()
         conn.close()
         return redirect("/")
 
-    record_dict = dict(record)
     conn.close()
-    return render_template("delete.html", record=record_dict)
+    return render_template("delete.html", record=record)
 
 # -----------------------------
 # RUN SERVER
