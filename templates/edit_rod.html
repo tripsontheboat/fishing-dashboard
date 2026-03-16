@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Edit Rod</h1>
+
+<form method="POST">
+    <label>Brand:</label><br>
+    <input name="brand" value="{{ rod.brand }}" required><br><br>
+
+    <label>Model:</label><br>
+    <input name="model" value="{{ rod.model }}" required><br><br>
+
+    <label>Series:</label><br>
+    <input name="series" value="{{ rod.series }}"><br><br>
+
+    <label>Length (ft):</label><br>
+    <input name="length_ft" value="{{ rod.length_ft }}"><br><br>
+
+    <label>Action:</label><br>
+    <input name="action" value="{{ rod.action }}"><br><br>
+
+    <label>Cost:</label><br>
+    <input name="cost" value="{{ rod.cost }}"><br><br>
+
+    <label>Source:</label><br>
+    <input name="source" value="{{ rod.source }}"><br><br>
+
+    <button class="save-btn">Save Changes</button>
+</form>
+
+{% endblock %}
+

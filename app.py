@@ -14,6 +14,10 @@ from flask_login import (
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
+from dotenv import load_dotenv
+load_dotenv()
+
+
 app = Flask(__name__)
 app.config["UPLOAD_FOLDER"] = "static/uploads"
 app.config["SECRET_KEY"] = "super-secret-key"
@@ -26,15 +30,14 @@ os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 def get_db():
     postgres_url = os.getenv("POSTGRES_URL")
 
-    if postgres_url:
-        return psycopg2.connect(
-            postgres_url,
-            cursor_factory=psycopg2.extras.RealDictCursor
-        )
-    else:
-        conn = sqlite3.connect("mydatabase.db")
-        conn.row_factory = sqlite3.Row
-        return conn
+    if not postgres_url:
+        raise RuntimeError("POSTGRES_URL is not set. Add it to your .env file.")
+
+    return psycopg2.connect(
+        postgres_url,
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
 
 # -----------------------------
 # USER + AUTH SETUP
@@ -187,6 +190,348 @@ def create_user():
         return redirect("/users")
 
     return render_template("create_user.html")
+
+# -----------------------------
+# SHOW TACKLE DASHBOARD
+# -----------------------------
+@app.route("/tackle")
+@login_required
+@role_required("read")
+def tackle_dashboard():
+    brand_filter = request.args.get("brand", "all")
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # Rods
+    if brand_filter != "all":
+        cur.execute("SELECT * FROM rods WHERE brand = %s ORDER BY brand", (brand_filter,))
+    else:
+        cur.execute("SELECT * FROM rods ORDER BY brand")
+    rods = cur.fetchall()
+
+    # Reels
+    if brand_filter != "all":
+        cur.execute("SELECT * FROM reels WHERE brand = %s ORDER BY brand", (brand_filter,))
+    else:
+        cur.execute("SELECT * FROM reels ORDER BY brand")
+    reels = cur.fetchall()
+
+    # Line
+    if brand_filter != "all":
+        cur.execute("SELECT * FROM line WHERE brand = %s ORDER BY brand", (brand_filter,))
+    else:
+        cur.execute("SELECT * FROM line ORDER BY brand")
+    line = cur.fetchall()
+
+    conn.close()
+
+    return render_template("tackle.html", rods=rods, reels=reels, line=line, brand_filter=brand_filter)
+
+
+# -----------------------------
+# ADD ROD ROUTE
+# -----------------------------
+@app.route("/add_rod", methods=["GET", "POST"])
+@login_required
+@role_required("write")
+def add_rod():
+    if request.method == "POST":
+        brand = request.form["brand"]
+        model = request.form["model"]
+        series = request.form.get("series")
+        length_ft = request.form.get("length_ft")
+        action = request.form.get("action")
+        cost = request.form.get("cost")
+        source = request.form.get("source")
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO rods (brand, model, series, length_ft, action, cost, source)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (brand, model, series, length_ft, action, cost, source))
+        conn.commit()
+        conn.close()
+
+        return redirect("/tackle")
+
+    return render_template("add_rod.html")
+
+# -----------------------------
+# ADD REEL ROUTE
+# -----------------------------
+@app.route("/add_reel", methods=["GET", "POST"])
+@login_required
+@role_required("write")
+def add_reel():
+    if request.method == "POST":
+        brand = request.form["brand"]
+        model = request.form["model"]
+        cost = request.form.get("cost")
+        source = request.form.get("source")
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO reels (brand, model, cost, source)
+            VALUES (%s, %s, %s, %s)
+        """, (brand, model, cost, source))
+        conn.commit()
+        conn.close()
+
+        return redirect("/tackle")
+
+    return render_template("add_reel.html")
+
+
+# -----------------------------
+# ADD LINE ROUTE
+# -----------------------------
+@app.route("/add_line", methods=["GET", "POST"])
+@login_required
+@role_required("write")
+def add_line():
+    if request.method == "POST":
+        brand = request.form["brand"]
+        model = request.form["model"]
+        type_ = request.form.get("type")
+        strength = request.form.get("strength")
+        cost = request.form.get("cost")
+        source = request.form.get("source")
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO line (brand, model, type, strength_lb, cost, source)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (brand, model, type_, strength, cost, source))
+        conn.commit()
+        conn.close()
+
+        return redirect("/tackle")
+
+    return render_template("add_line.html")
+
+
+# -----------------------------
+# ROD EDIT ROUTE
+# -----------------------------
+@app.route("/edit_rod/<int:id>", methods=["GET", "POST"])
+@login_required
+@role_required("write")
+def edit_rod(id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("SELECT * FROM rods WHERE id = %s", (id,))
+    rod = cur.fetchone()
+
+    if not rod:
+        conn.close()
+        return "Rod not found", 404
+
+    if request.method == "POST":
+        brand = request.form["brand"]
+        model = request.form["model"]
+        series = request.form.get("series")
+        length_ft = request.form.get("length_ft")
+        action = request.form.get("action")
+        cost = request.form.get("cost")
+        source = request.form.get("source")
+
+        cur.execute("""
+            UPDATE rods
+            SET brand=%s, model=%s, series=%s, length_ft=%s, action=%s, cost=%s, source=%s
+            WHERE id=%s
+        """, (brand, model, series, length_ft, action, cost, source, id))
+
+        conn.commit()
+        conn.close()
+        return redirect("/tackle")
+
+    conn.close()
+    return render_template("edit_rod.html", rod=rod)
+
+
+# -----------------------------
+# ROD DELETE ROUTE
+# -----------------------------
+@app.route("/delete_rod/<int:id>", methods=["GET", "POST"])
+@login_required
+@role_required("write")
+def delete_rod(id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("SELECT * FROM rods WHERE id = %s", (id,))
+    rod = cur.fetchone()
+
+    if not rod:
+        conn.close()
+        return "Rod not found", 404
+
+    if request.method == "POST":
+        cur.execute("DELETE FROM rods WHERE id = %s", (id,))
+        conn.commit()
+        conn.close()
+        return redirect("/tackle")
+
+    conn.close()
+    return render_template("delete_rod.html", rod=rod)
+
+# -----------------------------
+# REEL EDIT ROUTE
+# -----------------------------
+@app.route("/edit_reel/<int:id>", methods=["GET", "POST"])
+@login_required
+@role_required("write")
+def edit_reel(id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("SELECT * FROM reels WHERE id = %s", (id,))
+    reel = cur.fetchone()
+
+    if not reel:
+        conn.close()
+        return "Reel not found", 404
+
+    if request.method == "POST":
+        brand = request.form["brand"]
+        model = request.form["model"]
+        cost = request.form.get("cost")
+        source = request.form.get("source")
+
+        cur.execute("""
+            UPDATE reels
+            SET brand=%s, model=%s, cost=%s, source=%s
+            WHERE id=%s
+        """, (brand, model, cost, source, id))
+
+        conn.commit()
+        conn.close()
+        return redirect("/tackle")
+
+    conn.close()
+    return render_template("edit_reel.html", reel=reel)
+
+
+# -----------------------------
+# REEL DELETE ROUTE
+# -----------------------------
+@app.route("/delete_reel/<int:id>", methods=["GET", "POST"])
+@login_required
+@role_required("write")
+def delete_reel(id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("SELECT * FROM reels WHERE id = %s", (id,))
+    reel = cur.fetchone()
+
+    if not reel:
+        conn.close()
+        return "Reel not found", 404
+
+    if request.method == "POST":
+        cur.execute("DELETE FROM reels WHERE id = %s", (id,))
+        conn.commit()
+        conn.close()
+        return redirect("/tackle")
+
+    conn.close()
+    return render_template("delete_reel.html", reel=reel)
+
+# -----------------------------
+# EDIT LINE ROUTE
+# -----------------------------
+@app.route("/edit_line/<int:id>", methods=["GET", "POST"])
+@login_required
+@role_required("write")
+def edit_line(id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("SELECT * FROM line WHERE id = %s", (id,))
+    l = cur.fetchone()
+
+    if not l:
+        conn.close()
+        return "Line not found", 404
+
+    if request.method == "POST":
+        brand = request.form["brand"]
+        model = request.form["model"]
+        type_ = request.form.get("type")
+        strength = request.form.get("strength_lb")
+        cost = request.form.get("cost")
+        source = request.form.get("source")
+
+        cur.execute("""
+            UPDATE line
+            SET brand=%s, model=%s, type=%s, strength_lb=%s, cost=%s, source=%s
+            WHERE id=%s
+        """, (brand, model, type_, strength, cost, source, id))
+
+        conn.commit()
+        conn.close()
+        return redirect("/tackle")
+
+    conn.close()
+    return render_template("edit_line.html", l=l)
+
+
+
+# -----------------------------
+# DELETE LINE ROUTE
+# -----------------------------
+@app.route("/delete_line/<int:id>", methods=["GET", "POST"])
+@login_required
+@role_required("write")
+def delete_line(id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("SELECT * FROM line WHERE id = %s", (id,))
+    l = cur.fetchone()
+
+    if not l:
+        conn.close()
+        return "Line not found", 404
+
+    if request.method == "POST":
+        cur.execute("DELETE FROM line WHERE id = %s", (id,))
+        conn.commit()
+        conn.close()
+        return redirect("/tackle")
+
+    conn.close()
+    return render_template("delete_line.html", l=l)
+
+# -----------------------------
+# UPDATE ROD → REEL LINK
+# -----------------------------
+@app.route("/update_rod_reel", methods=["POST"])
+@login_required
+@role_required("write")
+def update_rod_reel():
+    rod_id = request.form["rod_id"]
+    reel_id = request.form.get("reel_id") or None
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute(
+        "UPDATE rods SET reel_id = %s WHERE id = %s",
+        (reel_id, rod_id)
+    )
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/tackle")
+
 
 # -----------------------------
 # CHANGE USER ROLE (ADMIN ONLY)
@@ -612,4 +957,3 @@ def delete(id):
 # -----------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
-

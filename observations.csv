@@ -1,0 +1,6 @@
+id,date,location,species,count,bait,size,water,platform,comments,image,lat,lng,water_temp,wind,wave_height,angler,youtube_url
+1,2026-01-06,Aruba,Barracuda,1,"Yozuri Minnow","6 inches",Saltwater,Shore,None,IMG_0234.HEIC,12.6008649,-70.0554203,78,10,1,Dan,
+2,2026-01-07,Aruba,Bonefish,1,"Yozuri Minnow","16 inches",Saltwater,Shore,None,IMG_6327.HEIC,12.604457,-790.051403,80,15,1,Dan,https://www.youtube.com/watch?v=bXsakd6uyBA
+3,2026-01-08,Aruba,Barracuda,2,Ballyhoo,"30""",Saltwater,Boat,None,IMG_3271.HEIC,12.6246935,-70.0659513,75,20,6,Dan,https://www.youtube.com/watch?v=98ffWCylvzI
+5,2026-02-15,"Whitings Pond, North Attleboro","Largemouth Bass",1,Shiner,"6""",Saltwater,Boat,None,IMG_0563.HEIC,41.9941,-71.3349,40,none,None,Dan,
+9,2026-03-01,Florida,Barracuda,1,ballyhoo,16,Saltwater,Boat,"",,"","",79,"","",Tom,

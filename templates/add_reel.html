@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Add Reel</h1>
+
+<form method="POST">
+    <label>Brand:</label><br>
+    <input name="brand" required><br><br>
+
+    <label>Model:</label><br>
+    <input name="model" required><br><br>
+
+    <label>Cost:</label><br>
+    <input name="cost" type="number" step="0.01"><br><br>
+
+    <label>Source:</label><br>
+    <input name="source"><br><br>
+
+    <button class="save-btn">Save Reel</button>
+</form>
+
+{% endblock %}
+

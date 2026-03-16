@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1 style="margin-bottom: 25px;">Tackle Dashboard</h1>
+
+<div style="margin-bottom: 25px;">
+    <a href="/add_rod"><button class="save-btn">Add Rod</button></a>
+    <a href="/add_reel"><button class="save-btn">Add Reel</button></a>
+    <a href="/add_line"><button class="save-btn">Add Line</button></a>
+</div>
+
+<!-- =======================
+     RODS
+======================= -->
+
+
+<div class="filter-box" style="margin-bottom: 25px;">
+    <form method="GET" action="/tackle" style="display:flex; gap:15px; align-items:center;">
+        <strong>Filter by Brand:</strong>
+
+        <button name="brand" value="all" class="save-btn" style="padding:6px 12px;">All</button>
+
+        <button name="brand" value="G Loomis" class="save-btn" style="padding:6px 12px;">
+            <img src="{{ url_for('static', filename='brands/loomis.png') }}" 
+                 style="height:20px; vertical-align:middle;"> G. Loomis
+        </button>
+
+        <button name="brand" value="Daiwa" class="save-btn" style="padding:6px 12px;">
+            <img src="{{ url_for('static', filename='brands/daiwa.png') }}" 
+                 style="height:20px; vertical-align:middle;"> Daiwa
+        </button>
+
+        <button name="brand" value="Shimano" class="save-btn" style="padding:6px 12px;">
+            <img src="{{ url_for('static', filename='brands/shimano.png') }}" 
+                 style="height:20px; vertical-align:middle;"> Shimano
+        </button>
+
+        <button name="brand" value="St Croix" class="save-btn" style="padding:6px 12px;">
+            <img src="{{ url_for('static', filename='brands/stcroix.png') }}" 
+                 style="height:20px; vertical-align:middle;"> St. Croix
+        </button>
+
+        <button name="brand" value="Penn" class="save-btn" style="padding:6px 12px;">
+            <img src="{{ url_for('static', filename='brands/penn.png') }}" 
+                 style="height:20px; vertical-align:middle;"> Penn
+        </button>
+    </form>
+</div>
+
+
+
+<h2>Rods</h2>
+<table>
+    <tr>
+        <th>Brand</th>
+        <th>Model</th>
+        <th>Series</th>
+        <th>Length</th>
+        <th>Action</th>
+        <th>Reel</th>
+        <th>Update</th>
+        <th>Edit</th>
+        <th>Delete</th>
+    </tr>
+
+    {% for rod in rods %}
+    <tr>
+        <td>{{ rod.brand }}</td>
+        <td>{{ rod.model }}</td>
+        <td>{{ rod.series }}</td>
+        <td>{{ rod.length_ft }}</td>
+        <td>{{ rod.action }}</td>
+
+        <td>
+            <form action="/update_rod_reel" method="POST" style="margin:0;">
+                <input type="hidden" name="rod_id" value="{{ rod.id }}">
+                <select name="reel_id" style="padding:6px; font-size:14px;">
+                    <option value="">-- None --</option>
+                    {% for reel in reels %}
+                        <option value="{{ reel.id }}"
+                            {% if rod.reel_id == reel.id %}selected{% endif %}>
+                            {{ reel.brand }} {{ reel.model }}
+                        </option>
+                    {% endfor %}
+                </select>
+        </td>
+
+        <td>
+                <button type="submit" class="save-btn">Save</button>
+            </form>
+        </td>
+
+        <td><a href="/edit_rod/{{ rod.id }}">Edit</a></td>
+        <td><a href="/delete_rod/{{ rod.id }}">Delete</a></td>
+    </tr>
+    {% endfor %}
+</table>
+
+<!-- =======================
+     REELS
+======================= -->
+<h2 style="margin-top: 40px;">Reels</h2>
+<table>
+    <tr>
+        <th>Brand</th>
+        <th>Model</th>
+        <th>Cost</th>
+        <th>Source</th>
+        <th>Edit</th>
+        <th>Delete</th>
+    </tr>
+
+    {% for reel in reels %}
+    <tr>
+        <td>{{ reel.brand }}</td>
+        <td>{{ reel.model }}</td>
+        <td>{{ reel.cost }}</td>
+        <td>{{ reel.source }}</td>
+        <td><a href="/edit_reel/{{ reel.id }}">Edit</a></td>
+        <td><a href="/delete_reel/{{ reel.id }}">Delete</a></td>
+    </tr>
+    {% endfor %}
+</table>
+
+<!-- =======================
+     LINE
+======================= -->
+<h2 style="margin-top: 40px;">Line</h2>
+<table>
+    <tr>
+        <th>Brand</th>
+        <th>Model</th>
+        <th>Type</th>
+        <th>Strength (lb)</th>
+        <th>Cost</th>
+        <th>Source</th>
+        <th>Edit</th>
+        <th>Delete</th>
+    </tr>
+
+    {% for l in line %}
+    <tr>
+        <td>{{ l.brand }}</td>
+        <td>{{ l.model }}</td>
+        <td>{{ l.type }}</td>
+        <td>{{ l.strength_lb }}</td>
+        <td>{{ l.cost }}</td>
+        <td>{{ l.source }}</td>
+        <td><a href="/edit_line/{{ l.id }}">Edit</a></td>
+        <td><a href="/delete_line/{{ l.id }}">Delete</a></td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}

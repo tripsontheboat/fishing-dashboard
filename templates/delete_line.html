@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Delete Line</h1>
+
+<p>Are you sure you want to delete this line?</p>
+
+<p><strong>{{ l.brand }} {{ l.model }} ({{ l.strength_lb }} lb)</strong></p>
+
+<form method="POST">
+    <button class="save-btn">Confirm Delete</button>
+</form>
+
+{% endblock %}
+

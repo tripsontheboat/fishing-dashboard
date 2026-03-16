@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Edit Reel</h1>
+
+<form method="POST">
+    <label>Brand:</label><br>
+    <input name="brand" value="{{ reel.brand }}" required><br><br>
+
+    <label>Model:</label><br>
+    <input name="model" value="{{ reel.model }}" required><br><br>
+
+    <label>Cost:</label><br>
+    <input name="cost" type="number" step="0.01" value="{{ reel.cost }}"><br><br>
+
+    <label>Source:</label><br>
+    <input name="source" value="{{ reel.source }}"><br><br>
+
+    <button class="save-btn">Save Changes</button>
+</form>
+
+{% endblock %}
+
