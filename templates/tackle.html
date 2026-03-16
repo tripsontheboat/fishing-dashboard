@@ -82,7 +82,7 @@
 
     {% for rod in rods %}
     <tr>
-        <td>
+<td>
     {% if rod.brand in brand_logos %}
         <img src="{{ url_for('static', filename='brands/' ~ brand_logos[rod.brand]) }}"
              alt="{{ rod.brand }}" style="height:30px;">
@@ -90,6 +90,7 @@
         {{ rod.brand }}
     {% endif %}
 </td>
+
 
         <td>{{ rod.model }}</td>
         <td>{{ rod.series }}</td>
@@ -137,7 +138,7 @@
 
     {% for reel in reels %}
     <tr>
-       <td>
+     <td>
     {% if reel.brand in brand_logos %}
         <img src="{{ url_for('static', filename='brands/' ~ brand_logos[reel.brand]) }}"
              alt="{{ reel.brand }}" style="height:30px;">
@@ -145,6 +146,7 @@
         {{ reel.brand }}
     {% endif %}
 </td>
+
 
         <td>{{ reel.model }}</td>
         <td>{{ reel.cost }}</td>
@@ -173,7 +175,7 @@
 
     {% for l in line %}
     <tr>
-        <td>
+   <td>
     {% if l.brand in brand_logos %}
         <img src="{{ url_for('static', filename='brands/' ~ brand_logos[l.brand]) }}"
              alt="{{ l.brand }}" style="height:30px;">
@@ -181,6 +183,7 @@
         {{ l.brand }}
     {% endif %}
 </td>
+
 
         <td>{{ l.model }}</td>
         <td>{{ l.type }}</td>
