@@ -1,5 +1,16 @@
+
 {% extends "base.html" %}
 {% block content %}
+{% set brand_logos = {
+    'G Loomis': 'loomis.png',
+    'Daiwa': 'daiwa.png',
+    'Shimano': 'shimano.png',
+    'St Croix': 'stcroix.png',
+    'Penn': 'penn.png',
+    'Tsunami': 'tsunami.png'
+} %}
+
+
 
 <h1 style="margin-bottom: 25px;">Tackle Dashboard</h1>
 
@@ -44,6 +55,12 @@
             <img src="{{ url_for('static', filename='brands/penn.png') }}" 
                  style="height:20px; vertical-align:middle;"> Penn
         </button>
+		
+		<button name="brand" value="Tsunami" class="save-btn" style="padding:6px 12px;">
+    			<img src="{{ url_for('static', filename='brands/tsunami.png') }}" 
+        			 style="height:20px; vertical-align:middle;"> Tsunami
+</button>
+
     </form>
 </div>
 
@@ -65,7 +82,15 @@
 
     {% for rod in rods %}
     <tr>
-        <td>{{ rod.brand }}</td>
+        <td>
+    {% if rod.brand in brand_logos %}
+        <img src="{{ url_for('static', filename='brands/' ~ brand_logos[rod.brand]) }}"
+             alt="{{ rod.brand }}" style="height:30px;">
+    {% else %}
+        {{ rod.brand }}
+    {% endif %}
+</td>
+
         <td>{{ rod.model }}</td>
         <td>{{ rod.series }}</td>
         <td>{{ rod.length_ft }}</td>
@@ -112,7 +137,15 @@
 
     {% for reel in reels %}
     <tr>
-        <td>{{ reel.brand }}</td>
+       <td>
+    {% if reel.brand in brand_logos %}
+        <img src="{{ url_for('static', filename='brands/' ~ brand_logos[reel.brand]) }}"
+             alt="{{ reel.brand }}" style="height:30px;">
+    {% else %}
+        {{ reel.brand }}
+    {% endif %}
+</td>
+
         <td>{{ reel.model }}</td>
         <td>{{ reel.cost }}</td>
         <td>{{ reel.source }}</td>
@@ -140,7 +173,15 @@
 
     {% for l in line %}
     <tr>
-        <td>{{ l.brand }}</td>
+        <td>
+    {% if l.brand in brand_logos %}
+        <img src="{{ url_for('static', filename='brands/' ~ brand_logos[l.brand]) }}"
+             alt="{{ l.brand }}" style="height:30px;">
+    {% else %}
+        {{ l.brand }}
+    {% endif %}
+</td>
+
         <td>{{ l.model }}</td>
         <td>{{ l.type }}</td>
         <td>{{ l.strength_lb }}</td>
@@ -153,3 +194,4 @@
 </table>
 
 {% endblock %}
+

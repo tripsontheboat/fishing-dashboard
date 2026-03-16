@@ -1,0 +1,15 @@
+# Environment variables
+.env
+
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environment
+venv/
+
+# macOS
+.DS_Store
+
+# Local databases (never push these)
+*.db
