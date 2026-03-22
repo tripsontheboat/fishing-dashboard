@@ -781,13 +781,14 @@ def report():
 # -----------------------------
 # HISTORY PAGE
 # -----------------------------
-@app.route("/history", methods=["GET"])
+@app.route("/history")
 @login_required
 @role_required("read")
 def history():
     year_filter = request.args.get("year")
     species_filter = request.args.get("species")
     water_filter = request.args.get("water")
+    sort_order = request.args.get("sort", "desc")
 
     query = "SELECT * FROM observations WHERE 1=1"
     params = []
@@ -804,36 +805,44 @@ def history():
         query += " AND water = %s"
         params.append(water_filter)
 
-    query += " ORDER BY date DESC"
+    if sort_order == "asc":
+        query += " ORDER BY date ASC"
+    else:
+        query += " ORDER BY date DESC"
 
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # Get distinct years
-    cur.execute("SELECT DISTINCT EXTRACT(YEAR FROM date) as year FROM observations ORDER BY year DESC")
-    years = [int(r["year"]) for r in cur.fetchall()]
+    # Dropdowns
+    cur.execute("SELECT DISTINCT EXTRACT(YEAR FROM date) as year FROM observations WHERE date IS NOT NULL ORDER BY year DESC")
+    years = [int(r[0]) for r in cur.fetchall()]
 
-    # Get distinct species
     cur.execute("SELECT DISTINCT species FROM observations WHERE species IS NOT NULL AND species != '' ORDER BY species ASC")
-    species_list = [r["species"] for r in cur.fetchall()]
+    species_list = [r[0] for r in cur.fetchall()]
 
-    # Get distinct water types
     cur.execute("SELECT DISTINCT water FROM observations WHERE water IS NOT NULL AND water != '' ORDER BY water ASC")
-    water_types = [r["water"] for r in cur.fetchall()]
+    water_types = [r[0] for r in cur.fetchall()]
 
-    # Get filtered catches
     cur.execute(query, params)
     catches = cur.fetchall()
 
+    total_catches = len(catches)
+    total_fish = sum(int(r.get("count") or 0) for r in catches)
+
     conn.close()
 
-    return render_template(
-        "history.html",
-        years=years,
-        species_list=species_list,
-        water_types=water_types,
-        catches=catches
-    )
+    return render_template("history.html",
+                           catches=catches,
+                           years=years,
+                           species_list=species_list,
+                           water_types=water_types,
+                           selected_year=year_filter,
+                           selected_species=species_filter,
+                           selected_water=water_filter,
+                           sort_order=sort_order,
+                           total_catches=total_catches,
+                           total_fish=total_fish)
+
 
 # -----------------------------
 # ADD ENTRY
