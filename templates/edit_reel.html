@@ -17,6 +17,8 @@
     <input name="source" value="{{ reel.source }}"><br><br>
 
     <button class="save-btn">Save Changes</button>
+    <input type="hidden" name="brand" value="{{ request.args.get('brand') }}">
+
 </form>
 
 {% endblock %}

@@ -210,12 +210,16 @@ def tackle_dashboard():
         cur.execute("SELECT * FROM rods ORDER BY brand")
     rods = cur.fetchall()
 
-    # Reels
+    # Reels for display (filtered)
     if brand_filter != "all":
         cur.execute("SELECT * FROM reels WHERE brand = %s ORDER BY brand", (brand_filter,))
     else:
         cur.execute("SELECT * FROM reels ORDER BY brand")
     reels = cur.fetchall()
+
+    # All reels for assignment dropdown
+    cur.execute("SELECT * FROM reels ORDER BY brand, model")
+    all_reels = cur.fetchall()
 
     # Line
     if brand_filter != "all":
@@ -226,7 +230,7 @@ def tackle_dashboard():
 
     conn.close()
 
-    return render_template("tackle.html", rods=rods, reels=reels, line=line, brand_filter=brand_filter)
+    return render_template("tackle.html", rods=rods, reels=reels, all_reels=all_reels, line=line, brand_filter=brand_filter)
 
 
 # -----------------------------
@@ -772,6 +776,63 @@ def report():
         total_trips=total_trips,
         total_fish=total_fish,
         unique_species=unique_species
+    )
+
+# -----------------------------
+# HISTORY PAGE
+# -----------------------------
+@app.route("/history", methods=["GET"])
+@login_required
+@role_required("read")
+def history():
+    year_filter = request.args.get("year")
+    species_filter = request.args.get("species")
+    water_filter = request.args.get("water")
+
+    query = "SELECT * FROM observations WHERE 1=1"
+    params = []
+
+    if year_filter:
+        query += " AND EXTRACT(YEAR FROM date) = %s"
+        params.append(year_filter)
+
+    if species_filter:
+        query += " AND species = %s"
+        params.append(species_filter)
+
+    if water_filter:
+        query += " AND water = %s"
+        params.append(water_filter)
+
+    query += " ORDER BY date DESC"
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # Get distinct years
+    cur.execute("SELECT DISTINCT EXTRACT(YEAR FROM date) as year FROM observations ORDER BY year DESC")
+    years = [int(r["year"]) for r in cur.fetchall()]
+
+    # Get distinct species
+    cur.execute("SELECT DISTINCT species FROM observations WHERE species IS NOT NULL AND species != '' ORDER BY species ASC")
+    species_list = [r["species"] for r in cur.fetchall()]
+
+    # Get distinct water types
+    cur.execute("SELECT DISTINCT water FROM observations WHERE water IS NOT NULL AND water != '' ORDER BY water ASC")
+    water_types = [r["water"] for r in cur.fetchall()]
+
+    # Get filtered catches
+    cur.execute(query, params)
+    catches = cur.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "history.html",
+        years=years,
+        species_list=species_list,
+        water_types=water_types,
+        catches=catches
     )
 
 # -----------------------------

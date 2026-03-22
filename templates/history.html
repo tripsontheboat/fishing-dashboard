@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Historical Catch Records</h1>
+
+<form method="GET" class="filter-form">
+    <select name="year">
+        <option value="">All Years</option>
+        {% for y in years %}
+            <option value="{{ y }}" {% if request.args.get('year') == y|string %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+    </select>
+
+    <select name="species">
+        <option value="">All Species</option>
+        {% for s in species_list %}
+            <option value="{{ s }}" {% if request.args.get('species') == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+    </select>
+
+    <select name="water">
+        <option value="">All Water Types</option>
+        {% for w in water_types %}
+            <option value="{{ w }}" {% if request.args.get('water') == w %}selected{% endif %}>{{ w }}</option>
+        {% endfor %}
+    </select>
+
+    <button type="submit">Filter</button>
+</form>
+
+<table>
+    <tr>
+        <th>Date</th>
+        <th>Species</th>
+        <th>Qty</th>
+        <th>Water</th>
+        <th>Location</th>
+        <th>Bait</th>
+        <th>Size</th>
+    </tr>
+
+    {% for c in catches %}
+    <tr>
+        <td>{{ c.date }}</td>
+        <td>{{ c.species }}</td>
+        <td>{{ c.count }}</td>
+        <td>{{ c.water }}</td>
+        <td>{{ c.location }}</td>
+        <td>{{ c.bait }}</td>
+        <td>{{ c.size }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}
+
