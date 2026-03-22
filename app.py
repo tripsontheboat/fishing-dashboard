@@ -638,7 +638,8 @@ def index():
     rows = cur.fetchall()
 
     total_trips = len(rows)
-    total_fish = sum(int(r["count"] or 0) for r in rows)
+    total_fish = sum(int(r["quantity"] or 0) for r in catches)
+
     species_counts = {}
 
     for r in rows:
@@ -685,7 +686,7 @@ def trip_summary():
     )
     rows = cur.fetchall()
 
-    total_fish = sum(int(r["count"] or 0) for r in rows)
+    total_fish = sum(int(r["count"]) if r["count"] and str(r["count"]).strip() else 0 for r in rows)
     species_set = {r["species"] for r in rows if r["species"]}
     unique_species = len(species_set)
 
@@ -693,7 +694,7 @@ def trip_summary():
     for r in rows:
         sp = r["species"]
         if sp:
-            species_counts[sp] = species_counts.get(sp, 0) + int(r["count"] or 0)
+            species_counts[sp] = species_counts.get(sp, 0) + (int(r["count"]) if r["count"] and str(r["count"]).strip() else 0)
 
     trip_lat = None
     trip_lng = None
@@ -764,7 +765,7 @@ def report():
     rows = cur.fetchall()
 
     total_trips = len(rows)
-    total_fish = sum(int(r["count"] or 0) for r in rows)
+    total_fish = sum(int(r["count"]) if r["count"] and str(r["count"]).strip() else 0 for r in rows)
     unique_species = len({r["species"] for r in rows if r["species"]})
 
     conn.close()
@@ -781,6 +782,8 @@ def report():
 # -----------------------------
 # HISTORY PAGE
 # -----------------------------
+from psycopg2.extras import DictCursor
+
 @app.route("/history")
 @login_required
 @role_required("read")
@@ -790,11 +793,11 @@ def history():
     water_filter = request.args.get("water")
     sort_order = request.args.get("sort", "desc")
 
-    query = "SELECT * FROM observations WHERE 1=1"
+    query = "SELECT * FROM historical_catches WHERE 1=1"
     params = []
 
     if year_filter:
-        query += " AND EXTRACT(YEAR FROM date) = %s"
+        query += " AND EXTRACT(YEAR FROM catch_date) = %s"
         params.append(year_filter)
 
     if species_filter:
@@ -802,31 +805,48 @@ def history():
         params.append(species_filter)
 
     if water_filter:
-        query += " AND water = %s"
+        query += " AND water_type = %s"
         params.append(water_filter)
 
     if sort_order == "asc":
-        query += " ORDER BY date ASC"
+        query += " ORDER BY catch_date ASC"
     else:
-        query += " ORDER BY date DESC"
+        query += " ORDER BY catch_date DESC"
 
     conn = get_db_connection()
-    cur = conn.cursor()
+    cur = conn.cursor(cursor_factory=DictCursor)
 
-    cur.execute("SELECT DISTINCT EXTRACT(YEAR FROM date) AS year FROM observations WHERE date IS NOT NULL ORDER BY year DESC")
-    years = [int(r[0]) for r in cur.fetchall()]
+    # Dropdowns
+    cur.execute("""
+        SELECT DISTINCT EXTRACT(YEAR FROM catch_date) AS year
+        FROM historical_catches
+        ORDER BY year DESC
+    """)
+    years = [int(r["year"]) for r in cur.fetchall()]
 
-    cur.execute("SELECT DISTINCT species FROM observations WHERE species IS NOT NULL AND species != '' ORDER BY species ASC")
-    species_list = [r[0] for r in cur.fetchall()]
+    cur.execute("""
+        SELECT DISTINCT species
+        FROM historical_catches
+        WHERE species IS NOT NULL AND species != ''
+        ORDER BY species ASC
+    """)
+    species_list = [r["species"] for r in cur.fetchall()]
 
-    cur.execute("SELECT DISTINCT water FROM observations WHERE water IS NOT NULL AND water != '' ORDER BY water ASC")
-    water_types = [r[0] for r in cur.fetchall()]
+    cur.execute("""
+        SELECT DISTINCT water_type
+        FROM historical_catches
+        WHERE water_type IS NOT NULL AND water_type != ''
+        ORDER BY water_type ASC
+    """)
+    water_types = [r["water_type"] for r in cur.fetchall()]
 
+    # Main query
     cur.execute(query, params)
     catches = cur.fetchall()
 
     total_catches = len(catches)
-    total_fish = sum(int(r.get("count") or 0) for r in catches)
+    total_fish = sum(int(c["count"] or 0) for c in catches)
+
 
     conn.close()
 
@@ -843,7 +863,6 @@ def history():
         total_catches=total_catches,
         total_fish=total_fish
     )
-
 
 # -----------------------------
 # ADD ENTRY
