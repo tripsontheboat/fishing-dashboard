@@ -5,6 +5,7 @@ import os
 import sqlite3
 import psycopg2
 import psycopg2.extras
+import datetime
 from flask import Flask, render_template, request, redirect, abort
 
 logging.basicConfig(
@@ -1021,11 +1022,28 @@ def heatmap():
     heatmap_data = {}
     for r in rows:
         species = r["species"]
-        month = r["date"].month
-        count = int(r["count"] or 0)
+        date_value = r.get("date")
+        if not date_value:
+            continue
+
+        month = None
+        if isinstance(date_value, (datetime.date, datetime.datetime)):
+            month = date_value.month
+        else:
+            try:
+                month = datetime.datetime.strptime(str(date_value), "%Y-%m-%d").month
+            except ValueError:
+                try:
+                    month = datetime.datetime.strptime(str(date_value), "%Y-%m-%d %H:%M:%S").month
+                except ValueError:
+                    continue
+
+        count = int(r.get("count") or 0)
         if species not in heatmap_data:
             heatmap_data[species] = {m: 0 for m in range(1, 13)}
+
         heatmap_data[species][month] += count
+
     return render_template("heatmap.html", heatmap_data=heatmap_data)
 
 
