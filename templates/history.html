@@ -25,8 +25,15 @@
         {% endfor %}
     </select>
 
+    <select name="sort">
+        <option value="desc" {% if request.args.get('sort', 'desc') == 'desc' %}selected{% endif %}>Newest First</option>
+        <option value="asc" {% if request.args.get('sort') == 'asc' %}selected{% endif %}>Oldest First</option>
+    </select>
+
     <button type="submit">Filter</button>
 </form>
+
+<p>Total catches: {{ total_catches }} | Total fish: {{ total_fish }}</p>
 
 <table>
     <tr>
@@ -39,17 +46,17 @@
         <th>Size</th>
     </tr>
 
-    {% for c in catches %}
-    <tr>
-        <td>{{ c.date }}</td>
-        <td>{{ c.species }}</td>
-        <td>{{ c.count }}</td>
-        <td>{{ c.water }}</td>
-        <td>{{ c.location }}</td>
-        <td>{{ c.bait }}</td>
-        <td>{{ c.size }}</td>
-    </tr>
-    {% endfor %}
+{% for c in catches %}
+<tr>
+    <td>{{ c.date }}</td>
+    <td>{{ c.species }}</td>
+    <td>{{ c.count }}</td>
+    <td>{{ c.water }}</td>
+    <td>{{ c.location }}</td>
+    <td>{{ c.bait }}</td>
+    <td>{{ c.size }}</td>
+</tr>
+{% endfor %}
 </table>
 
 {% endblock %}

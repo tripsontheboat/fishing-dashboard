@@ -813,8 +813,7 @@ def history():
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # Dropdowns
-    cur.execute("SELECT DISTINCT EXTRACT(YEAR FROM date) as year FROM observations WHERE date IS NOT NULL ORDER BY year DESC")
+    cur.execute("SELECT DISTINCT EXTRACT(YEAR FROM date) AS year FROM observations WHERE date IS NOT NULL ORDER BY year DESC")
     years = [int(r[0]) for r in cur.fetchall()]
 
     cur.execute("SELECT DISTINCT species FROM observations WHERE species IS NOT NULL AND species != '' ORDER BY species ASC")
@@ -831,17 +830,19 @@ def history():
 
     conn.close()
 
-    return render_template("history.html",
-                           catches=catches,
-                           years=years,
-                           species_list=species_list,
-                           water_types=water_types,
-                           selected_year=year_filter,
-                           selected_species=species_filter,
-                           selected_water=water_filter,
-                           sort_order=sort_order,
-                           total_catches=total_catches,
-                           total_fish=total_fish)
+    return render_template(
+        "history.html",
+        catches=catches,
+        years=years,
+        species_list=species_list,
+        water_types=water_types,
+        selected_year=year_filter,
+        selected_species=species_filter,
+        selected_water=water_filter,
+        sort_order=sort_order,
+        total_catches=total_catches,
+        total_fish=total_fish
+    )
 
 
 # -----------------------------
