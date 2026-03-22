@@ -29,34 +29,34 @@
     <form method="GET" action="/tackle" style="display:flex; gap:15px; align-items:center;">
         <strong>Filter by Brand:</strong>
 
-        <button name="brand" value="all" class="save-btn" style="padding:6px 12px;">All</button>
+        <button name="brand" value="all" class="save-btn" style="padding:6px 12px; {% if brand_filter == 'all' %}background-color: #4CAF50; color: white;{% endif %}">All</button>
 
-        <button name="brand" value="G Loomis" class="save-btn" style="padding:6px 12px;">
+        <button name="brand" value="G Loomis" class="save-btn" style="padding:6px 12px; {% if brand_filter == 'G Loomis' %}background-color: #4CAF50; color: white;{% endif %}">
             <img src="{{ url_for('static', filename='brands/loomis.png') }}" 
                  style="height:20px; vertical-align:middle;"> G. Loomis
         </button>
 
-        <button name="brand" value="Daiwa" class="save-btn" style="padding:6px 12px;">
+        <button name="brand" value="Daiwa" class="save-btn" style="padding:6px 12px; {% if brand_filter == 'Daiwa' %}background-color: #4CAF50; color: white;{% endif %}">
             <img src="{{ url_for('static', filename='brands/daiwa.png') }}" 
                  style="height:20px; vertical-align:middle;"> Daiwa
         </button>
 
-        <button name="brand" value="Shimano" class="save-btn" style="padding:6px 12px;">
+        <button name="brand" value="Shimano" class="save-btn" style="padding:6px 12px; {% if brand_filter == 'Shimano' %}background-color: #4CAF50; color: white;{% endif %}">
             <img src="{{ url_for('static', filename='brands/shimano.png') }}" 
                  style="height:20px; vertical-align:middle;"> Shimano
         </button>
 
-        <button name="brand" value="St Croix" class="save-btn" style="padding:6px 12px;">
+        <button name="brand" value="St Croix" class="save-btn" style="padding:6px 12px; {% if brand_filter == 'St Croix' %}background-color: #4CAF50; color: white;{% endif %}">
             <img src="{{ url_for('static', filename='brands/stcroix.png') }}" 
                  style="height:20px; vertical-align:middle;"> St. Croix
         </button>
 
-        <button name="brand" value="Penn" class="save-btn" style="padding:6px 12px;">
+        <button name="brand" value="Penn" class="save-btn" style="padding:6px 12px; {% if brand_filter == 'Penn' %}background-color: #4CAF50; color: white;{% endif %}">
             <img src="{{ url_for('static', filename='brands/penn.png') }}" 
                  style="height:20px; vertical-align:middle;"> Penn
         </button>
 		
-		<button name="brand" value="Tsunami" class="save-btn" style="padding:6px 12px;">
+		<button name="brand" value="Tsunami" class="save-btn" style="padding:6px 12px; {% if brand_filter == 'Tsunami' %}background-color: #4CAF50; color: white;{% endif %}">
     			<img src="{{ url_for('static', filename='brands/tsunami.png') }}" 
         			 style="height:20px; vertical-align:middle;"> Tsunami
 </button>
@@ -102,7 +102,7 @@
                 <input type="hidden" name="rod_id" value="{{ rod.id }}">
                 <select name="reel_id" style="padding:6px; font-size:14px;">
                     <option value="">-- None --</option>
-                    {% for reel in reels %}
+                    {% for reel in all_reels %}
                         <option value="{{ reel.id }}"
                             {% if rod.reel_id == reel.id %}selected{% endif %}>
                             {{ reel.brand }} {{ reel.model }}
