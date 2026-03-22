@@ -3,6 +3,7 @@ import sqlite3
 import psycopg2
 import psycopg2.extras
 from flask import Flask, render_template, request, redirect, abort
+
 from flask_login import (
     LoginManager,
     login_user,
@@ -845,8 +846,7 @@ def history():
     catches = cur.fetchall()
 
     total_catches = len(catches)
-    total_fish = sum(int(c["count"] or 0) for c in catches)
-
+    total_fish = sum(int(c.get("quantity") or 0) for c in catches)
 
     conn.close()
 
