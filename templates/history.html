@@ -39,7 +39,7 @@
     <tr>
         <th>Date</th>
         <th>Species</th>
-        <th>Qty</th>
+        <th>Quantity</th>
         <th>Water</th>
         <th>Location</th>
         <th>Bait</th>
@@ -48,15 +48,16 @@
 
 {% for c in catches %}
 <tr>
-    <td>{{ c.date }}</td>
+    <td>{{ c.catch_date }}</td>
     <td>{{ c.species }}</td>
-    <td>{{ c.count }}</td>
-    <td>{{ c.water }}</td>
+    <td>{{ c.quantity }}</td>
+    <td>{{ c.water_type }}</td>
     <td>{{ c.location }}</td>
     <td>{{ c.bait }}</td>
     <td>{{ c.size }}</td>
 </tr>
 {% endfor %}
+
 </table>
 
 {% endblock %}

@@ -638,7 +638,7 @@ def index():
     rows = cur.fetchall()
 
     total_trips = len(rows)
-    total_fish = sum(int(r["quantity"] or 0) for r in catches)
+    total_fish = sum(int(r["count"] or 0) for r in rows)
 
     species_counts = {}
 
