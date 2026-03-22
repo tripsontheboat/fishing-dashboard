@@ -1020,17 +1020,15 @@ def heatmap():
 
     heatmap_data = {}
     for r in rows:
-    species = r["species"]
-    month = r["date"].month          # ← FIXED
-    count = int(r["count"] or 0)
-
-    if species not in heatmap_data:
-        heatmap_data[species] = {m: 0 for m in range(1, 13)}
-
-    heatmap_data[species][month] += count
-
-
+        species = r["species"]
+        month = r["date"].month
+        count = int(r["count"] or 0)
+        if species not in heatmap_data:
+            heatmap_data[species] = {m: 0 for m in range(1, 13)}
+        heatmap_data[species][month] += count
     return render_template("heatmap.html", heatmap_data=heatmap_data)
+
+
 
 # -----------------------------
 # DELETE ENTRY
