@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Species List</h1>
+
+<table>
+    <tr><th>ID</th><th>Name</th></tr>
+    {% for s in species %}
+    <tr>
+        <td>{{ s.id }}</td>
+        <td>{{ s.name }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}
+
