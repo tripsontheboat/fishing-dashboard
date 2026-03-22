@@ -1,9 +1,18 @@
+print("RUNNING FILE:", __file__)
+
+import logging
 import os
 import sqlite3
 import psycopg2
 import psycopg2.extras
 from flask import Flask, render_template, request, redirect, abort
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
+logger = logging.getLogger(__name__)
 from flask_login import (
     LoginManager,
     login_user,
@@ -32,8 +41,10 @@ def get_db():
     postgres_url = os.getenv("POSTGRES_URL")
 
     if not postgres_url:
+        logger.error("POSTGRES_URL is not set")
         raise RuntimeError("POSTGRES_URL is not set. Add it to your .env file.")
 
+    logger.info("Connecting to Postgres")
     return psycopg2.connect(
         postgres_url,
         cursor_factory=psycopg2.extras.RealDictCursor
@@ -641,6 +652,8 @@ def index():
     total_trips = len(rows)
     total_fish = sum(int(r["count"] or 0) for r in rows)
 
+    logger.info("index called: total_trips=%s total_fish=%s", total_trips, total_fish)
+
     species_counts = {}
 
     for r in rows:
@@ -848,6 +861,8 @@ def history():
     total_catches = len(catches)
     total_fish = sum(int(c.get("quantity") or 0) for c in catches)
 
+    logger.info("history called: year=%s species=%s water=%s sort=%s total_catches=%s total_fish=%s", year_filter, species_filter, water_filter, sort_order, total_catches, total_fish)
+
     conn.close()
 
     return render_template(
@@ -1005,14 +1020,15 @@ def heatmap():
 
     heatmap_data = {}
     for r in rows:
-        species = r["species"]
-        month = int(r["date"][5:7])
-        count = int(r["count"] or 0)
+    species = r["species"]
+    month = r["date"].month          # ← FIXED
+    count = int(r["count"] or 0)
 
-        if species not in heatmap_data:
-            heatmap_data[species] = {m: 0 for m in range(1, 13)}
+    if species not in heatmap_data:
+        heatmap_data[species] = {m: 0 for m in range(1, 13)}
 
-        heatmap_data[species][month] += count
+    heatmap_data[species][month] += count
+
 
     return render_template("heatmap.html", heatmap_data=heatmap_data)
 
