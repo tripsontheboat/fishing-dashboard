@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Edit Trip</h2>
+
+<form method="POST">
+    <label>Date:</label><br>
+    <input type="date" name="date" value="{{ trip.date }}"><br><br>
+
+    <label>Location:</label><br>
+    <input type="text" name="location" value="{{ trip.location }}"><br><br>
+
+    <label>Angler:</label><br>
+    <input type="text" name="angler" value="{{ trip.angler }}"><br><br>
+
+    <label>Notes:</label><br>
+    <textarea name="notes">{{ trip.notes }}</textarea><br><br>
+
+    <button class="save-btn" type="submit">Save Changes</button>
+</form>
+
+{% endblock %}
+

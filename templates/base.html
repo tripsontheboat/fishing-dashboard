@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -193,16 +192,18 @@
         <a href="/">Dashboard</a>
         <a href="/report">Report</a>
         <a href="/heatmap">Species Heatmap</a>   
-		<a href="/tackle">Tackle</a>
+        <a href="/tackle">Tackle</a>
         <a href="/history">History</a>
-<!-- ⭐ NEW LINK ADDED HERE -->
+        <a href="/trips">Trips</a>
 
         {% if current_user.is_authenticated and current_user.role == "admin" %}
             <a href="/add">Add Entry</a>
+            <a href="/trip/add">Add Trip</a>
             <a href="/create_user">Create User</a>
             <a href="/users">User List</a>
         {% elif current_user.is_authenticated and current_user.role == "write" %}
             <a href="/add">Add Entry</a>
+            <a href="/trip/add">Add Trip</a>
         {% endif %}
     </div>
 
@@ -224,10 +225,4 @@
 
 </body>
 </html>
-
-
-
-
-
-
 

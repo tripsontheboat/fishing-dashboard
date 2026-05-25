@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Add New Trip</h1>
+
+<div class="form-card">
+    <form method="POST">
+
+        <div class="form-row">
+            <label>Date:</label>
+            <input type="date" name="date" required>
+        </div>
+
+        <div class="form-row">
+            <label>Location:</label>
+            <input type="text" name="location" required>
+        </div>
+
+        <div class="form-row">
+            <label>Angler:</label>
+            <input type="text" name="angler" required>
+        </div>
+
+        <div class="form-row" style="grid-column: 1 / -1;">
+            <label>Notes:</label>
+            <textarea name="notes" rows="3"></textarea>
+        </div>
+
+        <button type="submit" class="save-btn">Save Trip</button>
+    </form>
+</div>
+
+{% endblock %}
+

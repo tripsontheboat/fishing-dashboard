@@ -85,6 +85,20 @@
             <input type="text" name="angler" value="{{ row.angler }}">
         </div>
 
+        <!-- ⭐ Trip Selector (NEW) -->
+        <div class="form-row">
+            <label>Trip:</label>
+            <select name="trip_id">
+                <option value="">-- No Trip --</option>
+                {% for trip in trips %}
+                    <option value="{{ trip.id }}"
+                        {% if row.trip_id == trip.id %}selected{% endif %}>
+                        {{ trip.date }} - {{ trip.location }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
         <!-- Comments -->
         <div class="form-row">
             <label>Comments:</label>

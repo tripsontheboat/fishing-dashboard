@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Trips</h1>
+
+<a href="/trip/add" class="save-btn">Add New Trip</a>
+
+<table class="table">
+    <tr>
+        <th>Date</th>
+        <th>Location</th>
+        <th>Angler</th>
+        <th>Notes</th>
+        <th>Actions</th>
+    </tr>
+
+    {% for trip in trips %}
+    <tr>
+        <td>{{ trip.date }}</td>
+        <td>{{ trip.location }}</td>
+        <td>{{ trip.angler }}</td>
+        <td>{{ trip.notes }}</td>
+        <td>
+            <a href="/trip/edit/{{ trip.id }}">Edit</a> |
+            <a href="/trip/delete/{{ trip.id }}" style="color:red;">Delete</a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}
+

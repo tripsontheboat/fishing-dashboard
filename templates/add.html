@@ -112,6 +112,19 @@
             <input type="text" name="youtube_url" placeholder="https://youtube.com/..." style="width: 100%; margin-bottom: 10px;">
         </div>
 
+        <!-- Trip Selector (Corrected) -->
+        <div class="form-row" style="grid-column: 1 / -1;">
+            <label for="trip_id">Trip:</label>
+            <select name="trip_id" id="trip_id" class="form-control">
+                <option value="">-- No Trip --</option>
+                {% for trip in trips %}
+                    <option value="{{ trip.id }}">
+                        {{ trip.date }} — {{ trip.location }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
         <button type="submit" class="save-btn">Save Entry</button>
     </form>
 </div>

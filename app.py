@@ -1,5 +1,3 @@
-print("RUNNING FILE:", __file__)
-
 import logging
 import os
 import sqlite3
@@ -887,6 +885,13 @@ def history():
 @login_required
 @role_required("write")
 def add():
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # Fetch all trips for the dropdown (GET and POST both need this)
+    cur.execute("SELECT id, date, location FROM trips ORDER BY date DESC")
+    trips = cur.fetchall()
+
     if request.method == "POST":
         date = request.form["date"]
         location = request.form["location"]
@@ -908,6 +913,10 @@ def add():
 
         youtube_url = request.form.get("youtube_url")
 
+        # NEW: Trip ID from dropdown
+        trip_id = request.form.get("trip_id") or None
+
+        # Handle image upload
         image_file = request.files.get("image")
         filename = None
 
@@ -916,19 +925,17 @@ def add():
             image_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
             image_file.save(image_path)
 
-        conn = get_db_connection()
-        cur = conn.cursor()
-
+        # Insert catch including trip_id
         cur.execute(
             """
             INSERT INTO observations 
             (date, location, species, count, bait, size, water, platform, comments,
-             image, lat, lng, water_temp, wind, wave_height, angler, youtube_url)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+             image, lat, lng, water_temp, wind, wave_height, angler, youtube_url, trip_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
                 date, location, species, count, bait, size, water, platform, comments,
-                filename, lat, lng, water_temp, wind, wave_height, angler, youtube_url
+                filename, lat, lng, water_temp, wind, wave_height, angler, youtube_url, trip_id
             ),
         )
 
@@ -937,8 +944,8 @@ def add():
 
         return redirect("/")
 
-    return render_template("add.html")
-
+    conn.close()
+    return render_template("add.html", trips=trips)
 # -----------------------------
 # EDIT ENTRY
 # -----------------------------
@@ -948,6 +955,7 @@ def edit(id):
     conn = get_db_connection()
     cur = conn.cursor()
 
+    # Fetch the observation being edited
     cur.execute("SELECT * FROM observations WHERE id = %s", (id,))
     row = cur.fetchone()
 
@@ -955,6 +963,9 @@ def edit(id):
         conn.close()
         return "Entry not found", 404
 
+    # -----------------------------
+    # POST: Save changes
+    # -----------------------------
     if request.method == "POST":
         date = request.form["date"]
         location = request.form["location"]
@@ -973,6 +984,10 @@ def edit(id):
         angler = request.form.get("angler")
         youtube_url = request.form.get("youtube_url")
 
+        # NEW: Trip selection
+        trip_id = request.form.get("trip_id")  # may be None or ""
+
+        # Handle image upload
         image = row["image"]
         file = request.files.get("image")
         if file and file.filename != "":
@@ -980,16 +995,19 @@ def edit(id):
             file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
             image = filename
 
+        # Update DB
         cur.execute(
             """
             UPDATE observations
             SET date=%s, location=%s, species=%s, count=%s, bait=%s, size=%s, water=%s, platform=%s,
-                water_temp=%s, wind=%s, wave_height=%s, comments=%s, image=%s, lat=%s, lng=%s, angler=%s, youtube_url=%s
+                water_temp=%s, wind=%s, wave_height=%s, comments=%s, image=%s, lat=%s, lng=%s,
+                angler=%s, youtube_url=%s, trip_id=%s
             WHERE id=%s
             """,
             (
                 date, location, species, count, bait, size, water, platform,
-                water_temp, wind, wave_height, comments, image, lat, lng, angler, youtube_url, id
+                water_temp, wind, wave_height, comments, image, lat, lng,
+                angler, youtube_url, trip_id, id
             )
         )
 
@@ -997,8 +1015,135 @@ def edit(id):
         conn.close()
         return redirect("/")
 
+    # -----------------------------
+    # GET: Load edit form
+    # -----------------------------
+
+    # NEW: Load all trips for dropdown
+    cur.execute("SELECT id, date, location FROM trips ORDER BY date DESC")
+    trips = cur.fetchall()
+
     conn.close()
-    return render_template("edit.html", row=row)
+    return render_template("edit.html", row=row, trips=trips)
+
+
+
+# -----------------------------
+# ADD TRIP
+# ----------------------------
+
+@app.route("/trip/add", methods=["GET", "POST"])
+def add_trip():
+    if request.method == "POST":
+        date = request.form["date"]
+        location = request.form["location"]
+        notes = request.form.get("notes")
+        angler = request.form.get("angler")
+
+        conn = get_db()
+        cur = conn.cursor()
+
+        cur.execute(
+            "INSERT INTO trips (date, location, notes, angler) VALUES (%s, %s, %s, %s)",
+            (date, location, notes, angler)
+        )
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/trips")
+
+    return render_template("add_trip.html")
+
+
+# -----------------------------
+# ADD TRIPS
+# ----------------------------
+
+@app.route("/trips")
+@login_required
+@role_required("read")
+def trips():
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("SELECT id, date, location, notes, angler FROM trips ORDER BY date DESC")
+    trips = cur.fetchall()
+
+    conn.close()
+
+    return render_template("trips.html", trips=trips)
+
+
+
+# -----------------------------
+# EDIT TRIPS
+# ----------------------------
+
+@app.route("/trip/edit/<int:id>", methods=["GET", "POST"])
+@login_required
+@role_required("write")
+def edit_trip(id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # Fetch existing trip
+    cur.execute("SELECT * FROM trips WHERE id = %s", (id,))
+    trip = cur.fetchone()
+
+    if not trip:
+        conn.close()
+        return "Trip not found", 404
+
+    if request.method == "POST":
+        date = request.form["date"]
+        location = request.form["location"]
+        angler = request.form.get("angler")
+        notes = request.form.get("notes")
+
+        cur.execute("""
+            UPDATE trips
+            SET date = %s, location = %s, angler = %s, notes = %s
+            WHERE id = %s
+        """, (date, location, angler, notes, id))
+
+        conn.commit()
+        conn.close()
+        return redirect("/trips")
+
+    conn.close()
+    return render_template("edit_trip.html", trip=trip)
+
+
+
+# -----------------------------
+# DELETE TRIPS
+# ----------------------------
+
+@app.route("/trip/delete/<int:id>", methods=["GET", "POST"])
+@login_required
+@role_required("write")
+def delete_trip(id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("SELECT * FROM trips WHERE id = %s", (id,))
+    trip = cur.fetchone()
+
+    if not trip:
+        conn.close()
+        return "Trip not found", 404
+
+    if request.method == "POST":
+        cur.execute("DELETE FROM trips WHERE id = %s", (id,))
+        conn.commit()
+        conn.close()
+        return redirect("/trips")
+
+    conn.close()
+    return render_template("delete_trip.html", trip=trip)
+
+
 
 # -----------------------------
 # HEATMAP
