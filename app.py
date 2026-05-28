@@ -950,7 +950,6 @@ def add():
 # EDIT ENTRY
 # -----------------------------
 @app.route("/edit/<int:id>", methods=["GET", "POST"])
-@login_required
 def edit(id):
     conn = get_db_connection()
     cur = conn.cursor()
@@ -984,8 +983,12 @@ def edit(id):
         angler = request.form.get("angler")
         youtube_url = request.form.get("youtube_url")
 
-        # NEW: Trip selection
-        trip_id = request.form.get("trip_id")  # may be None or ""
+        # Trip selection (may be empty string)
+        trip_id = request.form.get("trip_id")
+
+        # ⭐ Option 1 fix: convert empty string to None
+        if trip_id == "":
+            trip_id = None
 
         # Handle image upload
         image = row["image"]
@@ -994,6 +997,7 @@ def edit(id):
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
             image = filename
+
 
         # Update DB
         cur.execute(
