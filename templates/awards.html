@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Awards — Top 3 Fish Per Species</h1>
+
+{% for species, entries in awards.items() %}
+    <h2 style="margin-top: 30px;">{{ species }}</h2>
+
+    <table>
+        <tr>
+            <th>Rank</th>
+            <th>Angler</th>
+            <th>Location</th>
+            <th>Size</th>
+            <th>Date</th>
+            <th>Image</th>
+            <th>Trip</th>
+        </tr>
+
+        {% for row in entries %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ row.angler }}</td>
+            <td>{{ row.location }}</td>
+            <td>{{ row.size }}</td>
+            <td>{{ row.date }}</td>
+
+            <td>
+                {% if row.image %}
+                    <img src="{{ url_for('static', filename='uploads/' ~ row.image) }}"
+                         style="width:60px; border-radius:4px;">
+                {% endif %}
+            </td>
+
+            <td>
+                <a href="/trip?date={{ row.date }}&location={{ row.location }}">View Trip</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+{% endfor %}
+
+{% endblock %}
+

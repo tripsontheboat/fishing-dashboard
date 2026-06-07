@@ -1,3 +1,4 @@
+
 import logging
 import os
 import sqlite3
@@ -1055,10 +1056,53 @@ def add_trip():
         conn.commit()
         conn.close()
 
+
         return redirect("/trips")
 
     return render_template("add_trip.html")
 
+# -----------------------------
+# ADD AWARDS
+# ----------------------------
+
+@app.route("/awards")
+@login_required
+def awards():
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT *
+        FROM (
+            SELECT 
+                id,
+                species,
+                angler,
+                location,
+                size,
+                date,
+                ROW_NUMBER() OVER (
+                    PARTITION BY species 
+                    ORDER BY size::numeric DESC
+                ) AS rank
+            FROM observations
+            WHERE size IS NOT NULL AND size <> ''
+        ) ranked
+        WHERE rank <= 3
+        ORDER BY species, rank;
+    """)
+
+    rows = cur.fetchall()
+
+    # Group by species for easy display
+    awards = {}
+    for row in rows:
+        species = row["species"]
+        if species not in awards:
+            awards[species] = []
+        awards[species].append(row)
+
+    return render_template("awards.html", awards=awards)
 
 # -----------------------------
 # ADD TRIPS
