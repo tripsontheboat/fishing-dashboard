@@ -1,4 +1,3 @@
-
 import logging
 import os
 import sqlite3
@@ -677,30 +676,33 @@ def index():
 # -----------------------------
 # TRIP SUMMARY PAGE
 # -----------------------------
-@app.route("/trip")
+
+@app.route("/trip/<int:trip_id>")
 @login_required
 @role_required("read")
-def trip_summary():
-    date = request.args.get("date")
-    location = request.args.get("location")
-
-    if not date or not location:
-        return "Missing trip parameters", 400
+def trip_summary(trip_id):
 
     conn = get_db_connection()
     cur = conn.cursor()
 
-    cur.execute(
-        """
-        SELECT * FROM observations
-        WHERE date = %s AND location = %s
+    # Get trip info
+    cur.execute("SELECT * FROM trips WHERE id = %s", (trip_id,))
+    trip = cur.fetchone()
+
+    if not trip:
+        return "Trip not found", 404
+
+    # Get all catches linked to this trip
+    cur.execute("""
+        SELECT *
+        FROM observations
+        WHERE trip_id = %s
         ORDER BY species ASC
-        """,
-        (date, location)
-    )
+    """, (trip_id,))
     rows = cur.fetchall()
 
-    total_fish = sum(int(r["count"]) if r["count"] and str(r["count"]).strip() else 0 for r in rows)
+    # Summary stats
+    total_fish = sum(int(r["count"]) if r["count"] else 0 for r in rows)
     species_set = {r["species"] for r in rows if r["species"]}
     unique_species = len(species_set)
 
@@ -708,38 +710,26 @@ def trip_summary():
     for r in rows:
         sp = r["species"]
         if sp:
-            species_counts[sp] = species_counts.get(sp, 0) + (int(r["count"]) if r["count"] and str(r["count"]).strip() else 0)
+            species_counts[sp] = species_counts.get(sp, 0) + (int(r["count"]) if r["count"] else 0)
 
-    trip_lat = None
-    trip_lng = None
-
-    for r in rows:
-        lat = r.get("lat")
-        lng = r.get("lng")
-        if lat and lng:
-            try:
-                trip_lat = float(lat)
-                trip_lng = float(lng)
-                break
-            except:
-                pass
-
-    youtube_url = rows[0].get("youtube_url") if rows else None
+    # Trip coordinates
+    trip_lat = trip.get("lat")
+    trip_lng = trip.get("lng")
 
     conn.close()
 
     return render_template(
         "trip_summary.html",
-        date=date,
-        location=location,
+        trip=trip,
         data=rows,
         total_fish=total_fish,
         unique_species=unique_species,
         species_counts=species_counts,
         trip_lat=trip_lat,
         trip_lng=trip_lng,
-        youtube_url=youtube_url
+        youtube_url=trip.get("youtube_url")
     )
+
 
 # -----------------------------
 # REPORT PAGE
@@ -1032,12 +1022,12 @@ def edit(id):
     return render_template("edit.html", row=row, trips=trips)
 
 
-
 # -----------------------------
 # ADD TRIP
-# ----------------------------
-
+# -----------------------------
 @app.route("/trip/add", methods=["GET", "POST"])
+@login_required
+@role_required("write")
 def add_trip():
     if request.method == "POST":
         date = request.form["date"]
@@ -1048,18 +1038,18 @@ def add_trip():
         conn = get_db()
         cur = conn.cursor()
 
-        cur.execute(
-            "INSERT INTO trips (date, location, notes, angler) VALUES (%s, %s, %s, %s)",
-            (date, location, notes, angler)
-        )
+        cur.execute("""
+            INSERT INTO trips (date, location, notes, angler)
+            VALUES (%s, %s, %s, %s)
+        """, (date, location, notes, angler))
 
         conn.commit()
         conn.close()
 
-
         return redirect("/trips")
 
     return render_template("add_trip.html")
+
 
 # -----------------------------
 # ADD AWARDS
@@ -1272,3 +1262,4 @@ def delete(id):
 # -----------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
+
